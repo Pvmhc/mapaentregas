@@ -1,97 +1,3 @@
-index.html
-Ficheiro
-neste html, podes alterar estes pontos
-DASHBOARD-FARO3.1.xlsx
-Folha de cálculo
-
-Perfeito. Já adaptei o HTML ao Excel que enviaste.
-
-Descarregar o HTML com importação de Excel
-
-O que ficou implementado
-Botão 📁 Importar Excel no topo.
-Procura automaticamente a aba ORDER.STATUS.DIA.
-Identifica a data mais recente da coluna Data solic.remessa.
-Carrega apenas os registos desse dia.
-Usa diretamente as colunas do teu Excel:
-Cliente
-Nome
-Cidade
-Nome do vendedor
-Motorista
-Contactos
-Stat. aprovação
-Documento Outbound
-Entregas contabiliza clientes únicos, mesmo que existam várias linhas para o mesmo cliente.
-Contacto motorista vem da coluna Contactos.
-O botão de chamada diz “Ligar para o motorista”.
-Os filtros de vendedor e motorista são reconstruídos automaticamente após a importação.
-A data no cabeçalho também é atualizada.
-
-No Excel que enviaste, por exemplo, a folha tem 257 registos para 08/10/2026, mas o contador passa a apresentar 181 entregas, porque são 181 clientes únicos.
-
-index_import_excel.html
-HTML
-podes criar quando a pessoa abre a primeira vez aparecer um icon para instalar como app, de forma a ter facil acesso, no mesmo jeito que usei no roadbook e painel comercial cloud
-
-Sim 👍 Ficou preparado no mesmo conceito do RoadBook e do Painel Comercial Cloud.
-
-O que foi acrescentado
-📲 Ao primeiro acesso aparece um convite “Instalar Order Status”.
-Botão Instalar usa o sistema nativo do Chrome/Edge quando disponível.
-Depois de instalar, o convite desaparece.
-Se a pessoa fechar o convite, fica disponível um pequeno botão “📲 Instalar App”.
-Se já estiver instalada como app, não aparece o convite.
-No iPhone/iPad, apresenta as instruções para Partilhar → Adicionar ao ecrã principal.
-Criei também o ícone da aplicação, manifest.webmanifest e sw.js.
-Mantive a importação do Excel e todas as alterações anteriores.
-Para colocar no GitHub
-
-O mais simples é descarregar este pacote e colocar todos os ficheiros no mesmo projeto:
-
-📦 Descarregar pacote completo — Order Status PWA
-
-Ou, se quiseres apenas o HTML atualizado:
-
-📄 Descarregar HTML atualizado
-
-Importante: para a instalação funcionar no GitHub, não basta enviar só o HTML. O manifest.webmanifest, sw.js e a pasta icons também têm de estar publicados.
-
-Se o teu GitHub usa index.html como página principal, o pacote que preparei já está organizado dessa forma.
-
-index_import_excel.html
-HTML
-agora mais difícil, vê se percebes, se um motorista tiver associado a dois numeros de transporte, o numero mais pequeno é 1ª volta o outro refere-se a 2ª volta
-
-Sim — e já deixei essa lógica aplicada.
-
-A regra ficou assim:
-
-Motorista → vários números de transporte
-O número de transporte mais pequeno = 1.ª volta
-O seguinte = 2.ª volta
-Se existir um terceiro, será 3.ª volta, etc.
-A informação aparece no cartão como, por exemplo:
-1.ª volta · Transporte: 299880
-A pesquisa também passa a procurar pelo número de transporte.
-A ordenação coloca a 1.ª volta antes da 2.ª volta.
-
-Confirmei no teu Excel, por exemplo:
-
-Andrii: 299880 → 1.ª volta | 299890 → 2.ª volta
-André: 299878 → 1.ª volta | 299889 → 2.ª volta
-Volodomyr: 299886 → 1.ª volta | 299892 → 2.ª volta
-Wadi: 299888 → 1.ª volta | 299893 → 2.ª volta
-Ficheiros atualizados
-
-📄 Descarregar HTML atualizado
-
-Ou, se quiseres substituir diretamente a versão que colocaste no GitHub:
-
-📦 Descarregar pacote PWA completo atualizado
-
-Atenção a um detalhe importante: a volta é determinada por motorista, não globalmente. Ou seja, se o Andrii tem 299880 e 299890, são as voltas dele; os números de outro motorista são avaliados separadamente.
-
 <!doctype html>
 <html lang="pt-PT">
 <head>
@@ -233,7 +139,7 @@ function render(){
       </div>
       <div class="grid">
         <div><div class="label">Contacto motorista</div><div class="value">${p?`<a class="contact" href="tel:${esc(p)}">☎ ${esc(x.contacto)}</a>`:esc(x.contacto||'—')}</div></div>
-        <div><div class="label">Estado</div><div class="value">${esc(x.status||'—')}</div></div>
+        <div><div class="label">Estado</div><div class="value">${(()=>{const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim()); const estado=String(x.status||'').trim(); const volta=info?`${info.numero}.ª volta`:''; return esc([estado,volta].filter(Boolean).join(' · ')||'—')})()}</div></div>
       </div>
       ${x.transporte?(()=>{const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim()); return `<div class="order"><b>${info?info.numero+'.ª volta':'Volta'}</b> · Transporte: ${esc(String(x.transporte).replace(/\.0$/,''))}</div>`})():''}
       ${p?`<a class="call" href="tel:${esc(p)}">📞 Ligar para o motorista</a>`:''}
@@ -345,5 +251,3 @@ window.addEventListener('load',()=>{
 </script>
 </body>
 </html>
-index_import_excel.html
-HTML
