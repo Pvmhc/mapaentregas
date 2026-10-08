@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
+<script>
+(function(){var t=null;try{t=localStorage.getItem('orderStatusTheme')}catch(e){}
+if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);
+var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='dark'?'#070b14':'#111827');})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,17 +18,27 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <title>Order Status Dia</title>
 <style>
-:root{--bg:#f3f4f6;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#111827;--green:#15803d;--blue:#2563eb}
+:root{--bg:#f3f4f6;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#111827;--green:#15803d;--blue:#2563eb;
+--top:rgba(243,244,246,.96);--input:#fff;--pill:#111827;--pill-text:#fff;--call-bg:#ecfdf5;--call-text:#166534;--label:#9ca3af;
+--btn:#fff;--btn-active:#f3f4f6;--pad:#f3f4f6;--pad-active:#e5e7eb;color-scheme:light}
+html[data-theme=dark]{--bg:#070b14;--card:#1c2740;--text:#f8fafc;--muted:#a3aec2;--line:#34445f;--green:#4ade80;
+--top:rgba(7,11,20,.96);--input:#1c2740;--pill:#f3f4f6;--pill-text:#111827;--call-bg:#12301f;--call-text:#86efac;--label:#8b97ab;
+--btn:#1c2740;--btn-active:#2a3a5c;--pad:#2a3652;--pad-active:#374667;color-scheme:dark}
+html[data-theme=dark] .card{border-color:var(--line);border-left:4px solid #60a5fa;box-shadow:0 4px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07)}
+html[data-theme=dark] .name{color:#fff}
+html[data-theme=dark] .call{border:1px solid rgba(74,222,128,.35)}
+html[data-theme=dark] .install-prompt,html[data-theme=dark] .install-fab{border:1px solid #273244}
+body{transition:background .2s,color .2s}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .app{max-width:760px;margin:auto;padding-bottom:30px}
-.top{position:sticky;top:0;z-index:20;background:rgba(243,244,246,.96);backdrop-filter:blur(12px);padding:12px 12px 10px;border-bottom:1px solid var(--line)}
+.top{position:sticky;top:0;z-index:20;background:var(--top);backdrop-filter:blur(12px);padding:12px 12px 10px;border-bottom:1px solid var(--line)}
 .title{display:flex;align-items:center;justify-content:space-between;gap:10px}
 h1{font-size:20px;margin:0;font-weight:800}
 .date{font-size:12px;color:var(--muted);margin-top:3px}
-.count{background:#111827;color:white;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
+.count{background:var(--pill);color:var(--pill-text);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
 .search{margin-top:10px;display:flex;gap:8px}
-input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:white;padding:0 12px;font-size:15px;outline:none}
+input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--input);color:var(--text);padding:0 12px;font-size:15px;outline:none}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .cards{padding:10px 12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:9px;padding:13px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
@@ -32,15 +48,43 @@ input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:1
 .client{font-size:12px;color:var(--muted);white-space:nowrap}
 .client b{color:var(--text)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
-.label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:800}
+.label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--label);font-weight:800}
 .value{font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .contact{display:inline-flex;align-items:center;gap:7px;color:var(--green);font-weight:800;text-decoration:none}
-.call{margin-top:11px;display:flex;align-items:center;justify-content:center;height:42px;border-radius:12px;background:#ecfdf5;color:#166534;text-decoration:none;font-weight:800}
+.call{margin-top:11px;display:flex;align-items:center;justify-content:center;height:42px;border-radius:12px;background:var(--call-bg);color:var(--call-text);text-decoration:none;font-weight:800}
+.volta{display:inline-block;margin-top:5px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800}
+.v1{background:#dcfce7;color:#166534}.v2{background:#dbeafe;color:#1e40af}.v3{background:#fef3c7;color:#92400e}
+html[data-theme=dark] .v1{background:rgba(74,222,128,.16);color:#86efac}
+html[data-theme=dark] .v2{background:rgba(96,165,250,.2);color:#93c5fd}
+html[data-theme=dark] .v3{background:rgba(251,191,36,.18);color:#fcd34d}
 .order{margin-top:10px;font-size:11px;color:var(--muted)}
 .empty{text-align:center;padding:50px 20px;color:var(--muted)}
-.footer{padding:0 12px;text-align:center;color:#9ca3af;font-size:11px}
+.footer{padding:0 12px;text-align:center;color:var(--label);font-size:11px}
 .install-prompt{position:fixed;left:12px;right:12px;bottom:14px;z-index:100;background:#111827;color:#fff;border-radius:18px;padding:12px;box-shadow:0 14px 40px rgba(0,0,0,.24);display:none;align-items:center;gap:11px;max-width:520px;margin:auto}.install-prompt.show{display:flex}.install-icon{width:42px;height:42px;border-radius:12px;background:#fff;display:grid;place-items:center;flex:0 0 42px}.install-icon img{width:28px;height:28px}.install-copy{flex:1;min-width:0}.install-copy strong{display:block;font-size:14px}.install-copy span{display:block;font-size:11px;color:#d1d5db;margin-top:2px}.install-actions{display:flex;gap:6px;align-items:center}.install-btn{border:0;border-radius:11px;height:38px;padding:0 12px;font-weight:800;cursor:pointer}.install-btn.primary{background:#fff;color:#111827}.install-btn.close{background:transparent;color:#d1d5db;font-size:18px;padding:0 7px}.install-fab{position:fixed;right:14px;bottom:14px;z-index:90;display:none;border:0;border-radius:999px;background:#111827;color:#fff;height:46px;padding:0 15px;font-weight:800;box-shadow:0 8px 25px rgba(0,0,0,.2);cursor:pointer}.install-fab.show{display:block}@media(min-width:600px){.install-prompt{left:auto;right:20px;width:390px}.install-fab{right:20px}}
 @media(min-width:600px){.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{margin:0}}
+
+.tools{display:flex;align-items:center;gap:8px}
+.icon-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--btn);color:var(--text);display:grid;place-items:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.icon-btn:active{transform:scale(.92);background:var(--btn-active)}
+.ico-sun{display:none}
+html[data-theme=dark] .ico-sun{display:block}
+html[data-theme=dark] .ico-moon{display:none}
+.icon-btn svg{width:16px;height:16px}
+.pin-back{position:fixed;inset:0;z-index:200;background:rgba(17,24,39,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}
+.pin-back.show{display:flex}
+.pin-box{width:100%;max-width:300px;background:var(--card);border-radius:22px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.pin-box h2{margin:0;font-size:16px;font-weight:800}
+.pin-box p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin:18px 0 16px}
+.pin-dots i{width:12px;height:12px;border-radius:50%;border:2px solid #9ca3af;transition:.12s}
+.pin-dots i.on{background:var(--text);border-color:var(--text)}
+.pin-dots.err{animation:pinshake .35s}
+.pin-dots.err i{border-color:#dc2626;background:#dc2626}
+@keyframes pinshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pin-pad button{height:50px;border:0;border-radius:14px;background:var(--pad);font-size:20px;font-weight:700;color:var(--text);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pin-pad button:active{background:var(--pad-active)}
+.pin-pad .ghost{background:transparent;font-size:14px;color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
@@ -48,14 +92,18 @@ input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:1
 <header class="top">
   <div class="title">
     <div><h1>ORDER.STATUS.DIA</h1><div class="date">Acesso rápido — 08/10/2026</div></div>
-    <div class="count" id="count">0</div>
+    <div class="tools">
+      <div class="count" id="count">0</div>
+      <button id="themeBtn" type="button" class="icon-btn" aria-label="Alternar modo claro/escuro" title="Modo claro/escuro">
+        <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button id="importBtn" type="button" class="icon-btn" aria-label="Importar Excel" title="Importar Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg></button>
+      <input id="excelInput" type="file" accept=".xlsx,.xls" hidden>
+    </div>
   </div>
   <div class="search">
     <input id="search" type="search" placeholder="Pesquisar cliente, estabelecimento, cidade...">
-  </div>
-  <div style="display:flex;gap:8px;margin-top:8px">
-    <button id="importBtn" type="button" style="flex:1;height:42px;border:0;border-radius:12px;background:#111827;color:#fff;font-weight:800;cursor:pointer">📁 Importar Excel</button>
-    <input id="excelInput" type="file" accept=".xlsx,.xls" hidden>
   </div>
   <div class="filters">
     <select id="seller"><option value="">Todos os vendedores</option></select>
@@ -65,6 +113,18 @@ input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:1
 <main id="cards" class="cards"></main>
 <div id="empty" class="empty" hidden>Não foram encontrados resultados.</div>
 <div class="footer">Contacto: toque no número para ligar diretamente ao motorista.</div>
+</div>
+<div id="pinBack" class="pin-back" role="dialog" aria-modal="true" aria-label="Introduzir PIN">
+  <div class="pin-box">
+    <h2>Importar Excel</h2><p>Introduza o PIN para continuar</p>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="pin-pad" id="pinPad">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button class="ghost" data-k="x">Cancelar</button><button data-k="0">0</button><button class="ghost" data-k="b">⌫</button>
+    </div>
+  </div>
 </div>
 <div id="installPrompt" class="install-prompt" role="dialog" aria-label="Instalar aplicação">
   <div class="install-icon"><img src="./icons/icon-192.png" alt=""></div>
@@ -81,10 +141,18 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 const phone=s=>String(s??'').replace(/[^\d+]/g,'');
 const unique=a=>[...new Set(a.filter(Boolean).map(String))].sort((x,y)=>x.localeCompare(y,'pt-PT'));
 function fillFilters(){
-  $('seller').innerHTML='<option value="">Todos os vendedores</option>';
-  $('driver').innerHTML='<option value="">Todos os motoristas</option>';
-  unique(ACTIVE_DATA.map(x=>x.vendedor)).forEach(v=>{let o=document.createElement('option');o.value=v;o.textContent=v;$('seller').appendChild(o)});
-  unique(ACTIVE_DATA.map(x=>x.motorista)).forEach(v=>{let o=document.createElement('option');o.value=v;o.textContent=v;$('driver').appendChild(o)});
+  const sel=$('seller').value, drv=$('driver').value;
+  // Cada filtro só mostra opções que têm encomendas com a escolha do outro filtro.
+  const sellers=unique(ACTIVE_DATA.filter(x=>!drv||x.motorista===drv).map(x=>x.vendedor));
+  const drivers=unique(ACTIVE_DATA.filter(x=>!sel||x.vendedor===sel).map(x=>x.motorista));
+  const fill=(el,label,list,cur)=>{
+    el.innerHTML='';
+    const first=document.createElement('option');first.value='';first.textContent=label;el.appendChild(first);
+    list.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)});
+    el.value=list.includes(cur)?cur:'';
+  };
+  fill($('seller'),'Todos os vendedores',sellers,sel);
+  fill($('driver'),'Todos os motoristas',drivers,drv);
 }
 function render(){
   const q=$('search').value.trim().toLowerCase(), s=$('seller').value, d=$('driver').value;
@@ -139,9 +207,9 @@ function render(){
       </div>
       <div class="grid">
         <div><div class="label">Contacto motorista</div><div class="value">${p?`<a class="contact" href="tel:${esc(p)}">☎ ${esc(x.contacto)}</a>`:esc(x.contacto||'—')}</div></div>
-        <div><div class="label">Estado</div><div class="value">${(()=>{const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim()); const estado=String(x.status||'').trim(); const volta=info?`${info.numero}.ª volta`:''; return esc([estado,volta].filter(Boolean).join(' · ')||'—')})()}</div></div>
+        <div><div class="label">Estado</div><div class="value">${(()=>{const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim()); return esc(String(x.status||'').trim()||'—')})()}</div>${(()=>{const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim()); return info?`<span class="volta v${Math.min(info.numero,3)}">${info.numero}ª volta</span>`:''})()}</div>
       </div>
-      ${x.transporte?(()=>{const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim()); return `<div class="order"><b>${info?info.numero+'.ª volta':'Volta'}</b> · Transporte: ${esc(String(x.transporte).replace(/\.0$/,''))}</div>`})():''}
+      ${x.transporte?`<div class="order">Transporte: ${esc(String(x.transporte).replace(/\.0$/,''))}</div>`:''}
       ${p?`<a class="call" href="tel:${esc(p)}">📞 Ligar para o motorista</a>`:''}
       ${x.ordem?`<div class="order">Ordem: ${esc(x.ordem)}</div>`:''}
     </article>`;
@@ -166,6 +234,8 @@ function importExcel(file){
       const ws=wb.Sheets[sheetName];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
       if(!rows.length) throw new Error('A aba ORDER.STATUS.DIA não contém dados.');
+      const norm=k=>String(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const transpKey=Object.keys(rows[0]).find(k=>norm(k).includes('transporte'))||'Nº transporte';
       const dateKey='Data solic.remessa';
       const dates=rows.map(r=>normalizeDate(r[dateKey])).filter(Boolean);
       if(!dates.length) throw new Error('Não encontrei a coluna "Data solic.remessa" com datas válidas.');
@@ -183,13 +253,14 @@ function importExcel(file){
         contacto:String(r['Contactos']??'').trim(),
         status:String(r['Stat. aprovação']??'').trim(),
         ordem:String(r['Documento Outbound']??'').trim(),
-        transporte:String(r['Nº transporte']??'').trim(),
+        transporte:String(r[transpKey]??'').trim().replace(/\.0+$/,''),
         id:String(r['Documento de vendas']??'').trim()
       }));
       if(!imported.length) throw new Error('Não foram encontrados clientes para a data mais recente da folha.');
       ACTIVE_DATA=imported;
       loadedDate=formatDate(latest);
       document.querySelector('.date').textContent='Dados importados — '+loadedDate;
+      $('seller').value='';$('driver').value='';
       fillFilters(); render();
       alert(`Excel importado com sucesso.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}`);
     }catch(err){alert('Não foi possível importar o Excel.\n\n'+err.message);}
@@ -197,9 +268,44 @@ function importExcel(file){
   };
   reader.readAsArrayBuffer(file);
 }
-$('importBtn').addEventListener('click',()=>$('excelInput').click());
+const IMPORT_PIN='2363';
+let pinVal='';
+const pinBack=$('pinBack'),pinDots=$('pinDots');
+function pinDraw(){[...pinDots.children].forEach((d,i)=>d.classList.toggle('on',i<pinVal.length));}
+function pinClose(){pinBack.classList.remove('show');pinVal='';pinDraw();}
+function pinKey(k){
+  if(k==='x'){pinClose();return;}
+  if(k==='b'){pinVal=pinVal.slice(0,-1);pinDraw();return;}
+  if(!/^\d$/.test(k)||pinVal.length>=4)return;
+  pinVal+=k;pinDraw();
+  if(pinVal.length===4){
+    if(pinVal===IMPORT_PIN){pinClose();$('excelInput').click();}
+    else{pinDots.classList.add('err');if(navigator.vibrate)navigator.vibrate(120);
+      setTimeout(()=>{pinDots.classList.remove('err');pinVal='';pinDraw();},400);}
+  }
+}
+$('importBtn').addEventListener('click',()=>{pinVal='';pinDraw();pinBack.classList.add('show');});
+$('pinPad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)pinKey(b.dataset.k);});
+pinBack.addEventListener('click',e=>{if(e.target===pinBack)pinClose();});
+document.addEventListener('keydown',e=>{
+  if(!pinBack.classList.contains('show'))return;
+  if(e.key>='0'&&e.key<='9')pinKey(e.key);
+  else if(e.key==='Backspace')pinKey('b');
+  else if(e.key==='Escape')pinKey('x');
+});
 $('excelInput').addEventListener('change',e=>{if(e.target.files[0])importExcel(e.target.files[0])});
-['search','seller','driver'].forEach(id=>$(id).addEventListener('input',render));
+$('search').addEventListener('input',render);
+['seller','driver'].forEach(id=>$(id).addEventListener('change',()=>{fillFilters();render();}));
+function setTheme(t,save){
+  document.documentElement.setAttribute('data-theme',t);
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='dark'?'#070b14':'#111827');
+  if(save){try{localStorage.setItem('orderStatusTheme',t)}catch(e){}}
+}
+$('themeBtn').addEventListener('click',()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark',true));
+try{
+  const mq=matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener('change',e=>{let saved=null;try{saved=localStorage.getItem('orderStatusTheme')}catch(_){}if(!saved)setTheme(e.matches?'dark':'light',false);});
+}catch(e){}
 fillFilters();render();
 </script>
 <script>
