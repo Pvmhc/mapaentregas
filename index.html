@@ -20,14 +20,14 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('cont
 <title>Order Status Dia</title>
 <style>
 :root{--bg:#f3f4f6;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#111827;--green:#15803d;--blue:#2563eb;
---top:rgba(243,244,246,.96);--input:#fff;--pill:#111827;--pill-text:#fff;--call-bg:#ecfdf5;--call-text:#166534;--label:#9ca3af;
---btn:#fff;--btn-active:#f3f4f6;--pad:#f3f4f6;--pad-active:#e5e7eb;color-scheme:light}
+--top:rgba(243,244,246,.96);--input:#fff;--pill:#111827;--pill-text:#fff;--call-bg:#1e6b3c;--call-text:#fff;--label2:#4b5563;--label:#9ca3af;
+--panel:#f1f5f9;--btn:#fff;--btn-active:#f3f4f6;--pad:#f3f4f6;--pad-active:#e5e7eb;color-scheme:light}
 html[data-theme=dark]{--bg:#070b14;--card:#1c2740;--text:#f8fafc;--muted:#a3aec2;--line:#34445f;--green:#4ade80;
---top:rgba(7,11,20,.96);--input:#1c2740;--pill:#f3f4f6;--pill-text:#111827;--call-bg:#12301f;--call-text:#86efac;--label:#8b97ab;
---btn:#1c2740;--btn-active:#2a3a5c;--pad:#2a3652;--pad-active:#374667;color-scheme:dark}
+--top:rgba(7,11,20,.96);--input:#1c2740;--pill:#f3f4f6;--pill-text:#111827;--call-bg:#1f7a45;--call-text:#fff;--label2:#a3aec2;--label:#8b97ab;
+--panel:#141d33;--btn:#1c2740;--btn-active:#2a3a5c;--pad:#2a3652;--pad-active:#374667;color-scheme:dark}
 html[data-theme=dark] .card{border-color:var(--line);border-left:4px solid #60a5fa;box-shadow:0 4px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07)}
 html[data-theme=dark] .name{color:#fff}
-html[data-theme=dark] .call{border:1px solid rgba(74,222,128,.35)}
+html[data-theme=dark] .call{border:1px solid rgba(74,222,128,.3)}
 html[data-theme=dark] .install-prompt,html[data-theme=dark] .install-fab{border:1px solid #273244}
 body{transition:background .2s,color .2s}
 *{box-sizing:border-box}
@@ -42,17 +42,37 @@ h1{font-size:20px;margin:0;font-weight:800}
 input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--input);color:var(--text);padding:0 12px;font-size:15px;outline:none}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .cards{padding:10px 12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:9px;padding:13px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.main{display:flex;justify-content:space-between;gap:10px}
-.name{font-weight:800;font-size:16px;line-height:1.2}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;padding:14px;box-shadow:0 2px 10px rgba(15,23,42,.06)}
+.c-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.c-title{min-width:0}
+.city{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted);margin-top:4px}
+.city svg{width:13px;height:13px;flex:0 0 13px}
+.client{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:5px 9px}
+.client span{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--label);font-weight:800}
+.client b{font-size:13px;font-variant-numeric:tabular-nums}
+.seller{display:flex;align-items:baseline;gap:4px;margin-top:12px;padding-bottom:14px;border-bottom:1px solid var(--line);font-size:14.5px}
+.s-dot{color:var(--muted)}.s-label{color:var(--muted)}
+.seller-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:2px}
+.driver{margin-top:14px;background:var(--panel);border-radius:14px;padding:13px 14px 24px}
+.d-row{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:6px;font-size:15.5px}
+.d-name{font-weight:800;font-size:16px}
+.d-sep{color:var(--muted)}.d-lbl{color:var(--text)}
+.d-row .volta{margin-top:0;font-size:12.5px;padding:4px 11px}
+.refs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:15px;border-top:1px dashed var(--line)}
+.refs .label{font-size:12.5px;color:var(--label2);letter-spacing:.04em}
+.refs div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.refs b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis}
+.name{font-weight:800;font-size:16px;line-height:1.25}
 .city{font-size:13px;color:var(--muted);margin-top:3px}
 .client{font-size:12px;color:var(--muted);white-space:nowrap}
 .client b{color:var(--text)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
 .label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--label);font-weight:800}
 .value{font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.contact{display:inline-flex;align-items:center;gap:7px;color:var(--green);font-weight:800;text-decoration:none}
-.call{margin-top:11px;display:flex;align-items:center;justify-content:center;height:42px;border-radius:12px;background:var(--call-bg);color:var(--call-text);text-decoration:none;font-weight:800}
+.contact{color:var(--green);font-weight:800;text-decoration:none;font-variant-numeric:tabular-nums}
+.call{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:9px;height:48px;border-radius:12px;font-size:16.5px;background:var(--call-bg);color:var(--call-text);text-decoration:none;font-weight:800}
+.call svg{width:19px;height:19px}
+.call.off{opacity:.45}
 .volta{display:inline-block;margin-top:5px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800}
 .v1{background:#dcfce7;color:#166534}.v2{background:#dbeafe;color:#1e40af}.v3{background:#fef3c7;color:#92400e}
 html[data-theme=dark] .v1{background:rgba(74,222,128,.16);color:#86efac}
@@ -214,24 +234,28 @@ function render(){
     return String(a.nome||'').localeCompare(String(b.nome||''),'pt-PT');
   });
 
+  const ICO_PIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+  const ICO_TEL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
   $('cards').innerHTML=out.map(x=>{
     const p=phone(x.contacto);
+    const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim());
+    const transp=String(x.transporte||'').replace(/\.0+$/,'');
+    const fmtTel=p.replace(/^(\+?\d{0,3}?)(\d{3})(\d{3})(\d{3})$/,(m,pre,a,b,c)=>(pre?pre+' ':'')+a+' '+b+' '+c);
     return `<article class="card">
-      <div class="main">
-        <div><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div>
-        <div class="client">Cliente<br><b>${esc(x.cliente||'—')}</b></div>
+      <div class="c-head">
+        <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
+        <div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>
       </div>
-      <div class="grid">
-        <div><div class="label">Vendedor</div><div class="value">${esc(x.vendedor||'—')}</div></div>
-        <div><div class="label">Motorista</div><div class="value">${esc(x.motorista||'—')}</div></div>
+      <div class="seller"><span class="s-dot">•</span><span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'—')}</span></div>
+      <div class="driver">
+        <div class="label">Motorista</div>
+        <div class="d-row"><b class="d-name">${esc(x.motorista||'—')}</b><span class="d-sep">•</span><span class="d-lbl">Entrega:</span>${info?`<span class="volta v${Math.min(info.numero,3)}">${info.numero}ª volta</span>`:'<span class="d-lbl">—</span>'}</div>
       </div>
-      <div class="grid">
-        <div><div class="label">Contacto motorista</div><div class="value">${p?`<a class="contact" href="tel:${esc(p)}">☎ ${esc(x.contacto)}</a>`:esc(x.contacto||'—')}</div></div>
-        <div><div class="label">Estado</div><div class="value">${(()=>{const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim()); return info?`<span class="volta v${Math.min(info.numero,3)}" style="margin-top:0">${info.numero}ª volta</span>`:'—'})()}</div></div>
+      ${p?`<a class="call" href="tel:${esc(p)}">${ICO_TEL}<span>Ligar: ${esc(fmtTel)}</span></a>`:`<div class="call off">${ICO_TEL}<span>Sem contacto</span></div>`}
+      <div class="refs">
+        <div><span class="label">Transporte</span><b>${esc(transp||'—')}</b></div>
+        <div><span class="label">Ordem</span><b>${esc(x.ordem||'—')}</b></div>
       </div>
-      ${x.transporte?`<div class="order">Transporte: ${esc(String(x.transporte).replace(/\.0$/,''))}</div>`:''}
-      ${p?`<a class="call" href="tel:${esc(p)}">📞 Ligar para o motorista</a>`:''}
-      ${x.ordem?`<div class="order">Ordem: ${esc(x.ordem)}</div>`:''}
     </article>`;
   }).join('');
 }
