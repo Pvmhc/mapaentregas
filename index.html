@@ -58,6 +58,9 @@ h1{font-size:17px;margin:0;font-weight:800;min-width:0;overflow:hidden;text-over
 .count{background:var(--pill);color:var(--pill-text);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
 .search{margin-top:10px;display:flex;gap:8px}
 input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--input);color:var(--text);padding:0 12px;font-size:15px;outline:none}
+.voltas{display:flex;gap:8px;margin-top:8px}
+.chip{flex:1;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--input);color:var(--text);font-weight:700;font-size:13px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.chip.on{background:var(--pill);color:var(--pill-text);border-color:var(--pill)}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .cards{padding:10px 12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;padding:14px;box-shadow:0 2px 10px rgba(15,23,42,.06)}
@@ -183,6 +186,7 @@ html.locked body{overflow:hidden}
     <select id="seller"><option value="">Todos os vendedores</option></select>
     <select id="driver"><option value="">Todos os motoristas</option></select>
   </div>
+  <div class="voltas" id="voltas"></div>
 </header>
 <main id="cards" class="cards"></main>
 <div id="empty" class="empty" hidden>Não foram encontrados resultados.</div>
@@ -221,11 +225,44 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const phone=s=>String(s??'').replace(/[^\d+]/g,'');
 const unique=a=>[...new Set(a.filter(Boolean).map(String))].sort((x,y)=>x.localeCompare(y,'pt-PT'));
+let voltaSel=0; // 0 = todas as voltas
+// Define a volta de cada transporte por motorista: o número mais pequeno é a 1.ª volta.
+function computeVolta(){
+  const byDriver=new Map();
+  ACTIVE_DATA.forEach(x=>{
+    const m=String(x.motorista||'').trim(), t=String(x.transporte||'').trim();
+    if(!m||!t) return;
+    if(!byDriver.has(m)) byDriver.set(m,new Set());
+    byDriver.get(m).add(t);
+  });
+  const info=new Map();
+  byDriver.forEach((set,m)=>{
+    const lista=[...set].sort((a,b)=>{
+      const na=parseFloat(String(a).replace(',','.')), nb=parseFloat(String(b).replace(',','.'));
+      if(Number.isFinite(na)&&Number.isFinite(nb)) return na-nb;
+      if(Number.isFinite(na)) return -1;
+      if(Number.isFinite(nb)) return 1;
+      return String(a).localeCompare(String(b),'pt-PT');
+    });
+    lista.forEach((t,i)=>info.set(m+'|'+t,{numero:i+1,total:lista.length}));
+  });
+  return info;
+}
+const voltaOf=(x,vi)=>vi.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim())?.numero||0;
+function buildVoltaChips(vi){
+  let max=2; vi.forEach(v=>{if(v.numero>max)max=v.numero});
+  const opts=[[0,'Todas']]; for(let i=1;i<=max;i++) opts.push([i,i+'ª volta']);
+  if(voltaSel>max) voltaSel=0;
+  $('voltas').innerHTML=opts.map(([n,l])=>`<button type="button" class="chip${n===voltaSel?' on':''}" data-v="${n}">${l}</button>`).join('');
+}
 function fillFilters(){
   const sel=$('seller').value, drv=$('driver').value;
   // Cada filtro só mostra opções que têm encomendas com a escolha do outro filtro.
-  const sellers=unique(ACTIVE_DATA.filter(x=>!drv||x.motorista===drv).map(x=>x.vendedor));
-  const drivers=unique(ACTIVE_DATA.filter(x=>!sel||x.vendedor===sel).map(x=>x.motorista));
+  const vi=computeVolta();
+  buildVoltaChips(vi);
+  const okV=x=>!voltaSel||voltaOf(x,vi)===voltaSel;
+  const sellers=unique(ACTIVE_DATA.filter(x=>okV(x)&&(!drv||x.motorista===drv)).map(x=>x.vendedor));
+  const drivers=unique(ACTIVE_DATA.filter(x=>okV(x)&&(!sel||x.vendedor===sel)).map(x=>x.motorista));
   const fill=(el,label,list,cur)=>{
     el.innerHTML='';
     const first=document.createElement('option');first.value='';first.textContent=label;el.appendChild(first);
@@ -237,35 +274,14 @@ function fillFilters(){
 }
 function render(){
   const q=$('search').value.trim().toLowerCase(), s=$('seller').value, d=$('driver').value;
+  const voltaInfo=computeVolta();
   const out=ACTIVE_DATA.filter(x=>{
     const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x.motorista,x.contacto,x.ordem,x.transporte].join(' ').toLowerCase();
-    return (!q||hay.includes(q))&&(!s||x.vendedor===s)&&(!d||x.motorista===d);
+    return (!q||hay.includes(q))&&(!s||x.vendedor===s)&&(!d||x.motorista===d)&&(!voltaSel||voltaOf(x,voltaInfo)===voltaSel);
   });
   const uniqueClients=new Set(out.map(x=>String(x.cliente||'').trim()).filter(Boolean));
   $('count').textContent=uniqueClients.size;
   $('empty').hidden=out.length!==0;
-
-  // Define a volta de cada transporte por motorista: o número mais pequeno é a 1.ª volta.
-  const transportByDriver=new Map();
-  ACTIVE_DATA.forEach(x=>{
-    const motorista=String(x.motorista||'').trim();
-    const transporte=String(x.transporte||'').trim();
-    if(!motorista || !transporte) return;
-    if(!transportByDriver.has(motorista)) transportByDriver.set(motorista,new Set());
-    transportByDriver.get(motorista).add(transporte);
-  });
-  const voltaInfo=new Map();
-  transportByDriver.forEach((set,motorista)=>{
-    const lista=[...set].sort((a,b)=>{
-      const na=parseFloat(String(a).replace(',','.'));
-      const nb=parseFloat(String(b).replace(',','.'));
-      if(Number.isFinite(na)&&Number.isFinite(nb)) return na-nb;
-      if(Number.isFinite(na)) return -1;
-      if(Number.isFinite(nb)) return 1;
-      return String(a).localeCompare(String(b),'pt-PT');
-    });
-    lista.forEach((transporte,i)=>voltaInfo.set(motorista+'|'+transporte,{numero:i+1,total:lista.length}));
-  });
 
   // Mostra primeiro a 1.ª volta e depois a 2.ª volta.
   out.sort((a,b)=>{
@@ -347,7 +363,7 @@ function importExcel(file){
       const comTransp=imported.filter(x=>x.transporte&&x.motorista).length;
       loadedDate=formatDate(latest);
       document.querySelector('.date').textContent='Dados importados — '+loadedDate;
-      $('seller').value='';$('driver').value='';
+      $('seller').value='';$('driver').value='';voltaSel=0;
       fillFilters(); render();
       const aviso=!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
       alert(`Excel importado com sucesso.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}${aviso}`);
@@ -404,6 +420,7 @@ document.addEventListener('keydown',e=>{
 });
 $('excelInput').addEventListener('change',e=>{if(e.target.files[0])importExcel(e.target.files[0])});
 $('search').addEventListener('input',render);
+$('voltas').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;voltaSel=+b.dataset.v;fillFilters();render();});
 ['seller','driver'].forEach(id=>$(id).addEventListener('change',()=>{fillFilters();render();}));
 function setTheme(t,save){
   document.documentElement.setAttribute('data-theme',t);
