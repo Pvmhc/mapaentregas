@@ -8,6 +8,7 @@
 (function(){var t=null;try{t=localStorage.getItem('orderStatusTheme')}catch(e){}
 if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);
+try{if(sessionStorage.getItem('orderStatusUnlocked')!=='1')document.documentElement.classList.add('locked');}catch(e){document.documentElement.classList.add('locked');}
 var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='dark'?'#070b14':'#111827');})();
 </script>
 <link rel="manifest" href="manifest.webmanifest">
@@ -70,6 +71,12 @@ html[data-theme=dark] .v3{background:rgba(251,191,36,.18);color:#fcd34d}
 html[data-theme=dark] .ico-sun{display:block}
 html[data-theme=dark] .ico-moon{display:none}
 .icon-btn svg{width:16px;height:16px}
+.lock{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;align-items:center;justify-content:center;padding:20px}
+html.locked .lock{display:flex}
+html.locked body{overflow:hidden}
+.lock .pin-box{box-shadow:none;background:transparent;max-width:290px}
+.lock-ico{width:54px;height:54px;border-radius:50%;background:var(--pill);color:var(--pill-text);display:grid;place-items:center;margin:0 auto 14px}
+.lock-ico svg{width:24px;height:24px}
 .pin-back{position:fixed;inset:0;z-index:200;background:rgba(17,24,39,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}
 .pin-back.show{display:flex}
 .pin-box{width:100%;max-width:300px;background:var(--card);border-radius:22px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -88,6 +95,19 @@ html[data-theme=dark] .ico-moon{display:none}
 </style>
 </head>
 <body>
+<div id="lock" class="lock" role="dialog" aria-modal="true" aria-label="Entrar na app">
+  <div class="pin-box">
+    <div class="lock-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <h2>Order Status Dia</h2><p>Introduza o PIN para entrar</p>
+    <div class="pin-dots" id="lockDots"><i></i><i></i><i></i><i></i></div>
+    <div class="pin-pad" id="lockPad">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <span></span><button data-k="0">0</button><button class="ghost" data-k="b">⌫</button>
+    </div>
+  </div>
+</div>
 <div class="app">
 <header class="top">
   <div class="title">
@@ -271,6 +291,27 @@ function importExcel(file){
   };
   reader.readAsArrayBuffer(file);
 }
+const ENTRY_PIN='2026';
+let lockVal='';
+const lockDots=$('lockDots');
+function lockDraw(){[...lockDots.children].forEach((d,i)=>d.classList.toggle('on',i<lockVal.length));}
+function lockKey(k){
+  if(k==='b'){lockVal=lockVal.slice(0,-1);lockDraw();return;}
+  if(!/^\d$/.test(k)||lockVal.length>=4)return;
+  lockVal+=k;lockDraw();
+  if(lockVal.length===4){
+    if(lockVal===ENTRY_PIN){
+      try{sessionStorage.setItem('orderStatusUnlocked','1')}catch(e){}
+      document.documentElement.classList.remove('locked');lockVal='';lockDraw();
+    }else{lockDots.classList.add('err');if(navigator.vibrate)navigator.vibrate(120);
+      setTimeout(()=>{lockDots.classList.remove('err');lockVal='';lockDraw();},400);}
+  }
+}
+$('lockPad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)lockKey(b.dataset.k);});
+document.addEventListener('keydown',e=>{
+  if(!document.documentElement.classList.contains('locked'))return;
+  if(e.key>='0'&&e.key<='9')lockKey(e.key);else if(e.key==='Backspace')lockKey('b');
+});
 const IMPORT_PIN='2363';
 let pinVal='';
 const pinBack=$('pinBack'),pinDots=$('pinDots');
