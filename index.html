@@ -195,7 +195,7 @@ html.locked body{overflow:hidden}
 <div id="pinBack" class="pin-back" role="dialog" aria-modal="true" aria-label="Introduzir PIN">
   <div class="pin-box">
     <h2>Importar Excel</h2><p>Introduza o PIN para continuar</p>
-    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
     <div class="pin-pad" id="pinPad">
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
@@ -450,9 +450,9 @@ function pinClose(){pinBack.classList.remove('show');pinVal='';pinDraw();}
 function pinKey(k){
   if(k==='x'){pinClose();return;}
   if(k==='b'){pinVal=pinVal.slice(0,-1);pinDraw();return;}
-  if(!/^\d$/.test(k)||pinVal.length>=6)return;
+  if(!/^\d$/.test(k)||pinVal.length>=4)return;
   pinVal+=k;pinDraw();
-  if(pinVal.length===6){
+  if(pinVal.length===4){
     const candidate=pinVal;
     // O PIN é validado no servidor quando a importação é submetida.
     ADMIN_PIN_FOR_SAVE=candidate;pinClose();$('excelInput').click();
