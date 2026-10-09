@@ -639,24 +639,46 @@ function showToast(msg){
   if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}
   t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
-async function copyText(text){
-  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true;}}catch(e){}
+// Copia de forma síncrona (dentro do toque) para funcionar em iOS/Android; a API async fica como alternativa.
+function copyTextSync(text){
   try{
     const ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');
-    ta.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(ta);
-    ta.select();ta.setSelectionRange(0,text.length);const ok=document.execCommand('copy');ta.remove();return ok;
+    ta.style.cssText='position:fixed;top:0;left:0;opacity:0;font-size:16px';document.body.appendChild(ta);
+    ta.focus({preventScroll:true});ta.select();ta.setSelectionRange(0,text.length);
+    const ok=document.execCommand('copy');ta.remove();return ok;
   }catch(e){return false;}
 }
-function openSalesforce(){
-  if(/android/i.test(navigator.userAgent)) location.href='intent://#Intent;scheme=salesforce1;package=com.salesforce.chatter;end';
-  else location.href='salesforce1://';
+async function copyText(text){
+  if(copyTextSync(text))return true;
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true;}}catch(e){}
+  return false;
 }
-$('cards').addEventListener('click',async e=>{
+function openSalesforce(){
+  const ua=navigator.userAgent||'';
+  if(/android/i.test(ua)){
+    // Abre a app pelo pacote (lançador), sem depender de um endereço interno.
+    location.href='intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.salesforce.chatter;end';
+  }else{
+    location.href='salesforce1://';
+  }
+}
+$('cards').addEventListener('click',e=>{
   const b=e.target.closest('.enc');if(!b)return;
   const v=b.dataset.enc;if(!v)return;
-  const ok=await copyText(v);
-  showToast(ok?`Encomenda ${v} copiada — a abrir Salesforce…`:'Não foi possível copiar o número');
-  setTimeout(openSalesforce,450);
+  // 1) copia já, no próprio toque
+  const okSync=copyTextSync(v);
+  if(!okSync) copyText(v).then(ok=>{if(!ok)showToast('Não foi possível copiar o número');});
+  showToast(`Encomenda ${v} copiada — a abrir Salesforce…`);
+  // 2) abre a app logo a seguir
+  let left=false;
+  const onHide=()=>{if(document.hidden)left=true;};
+  document.addEventListener('visibilitychange',onHide);
+  setTimeout(openSalesforce,250);
+  // 3) se a app não abriu, avisa (o número já está copiado)
+  setTimeout(()=>{
+    document.removeEventListener('visibilitychange',onHide);
+    if(!left)showToast(`Número ${v} copiado. Se o Salesforce não abriu, abra-o e cole.`);
+  },2200);
 });
 $('importBtn').addEventListener('click',()=>{pinVal='';pinDraw();pinBack.classList.add('show');});
 $('pinPad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)pinKey(b.dataset.k);});
