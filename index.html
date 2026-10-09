@@ -71,7 +71,10 @@ input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:1
 .client{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:5px 9px}
 .client span{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--label);font-weight:800}
 .client b{font-size:13px;font-variant-numeric:tabular-nums}
-.seller{display:flex;align-items:baseline;gap:4px;margin-top:12px;padding-bottom:14px;border-bottom:1px solid var(--line);font-size:14.5px}
+.seller{display:flex;align-items:center;gap:6px;margin-top:12px;padding-bottom:14px;border-bottom:1px solid var(--line);font-size:14.5px}
+.s-av{width:36px;height:36px;flex:0 0 36px;border-radius:50%;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;letter-spacing:.02em;border:2px solid var(--line);background:#64748b;cursor:pointer;padding:0;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.s-av img{width:100%;height:100%;object-fit:cover;display:block}
+.s-av.none{cursor:default;background:var(--panel);color:var(--muted)}
 .s-dot{color:var(--muted)}.s-label{color:var(--muted)}
 .seller-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:2px}
 .driver{display:grid;grid-template-columns:1fr 1fr;margin-top:14px;background:var(--panel);border-radius:14px;padding:16px 0}
@@ -259,6 +262,7 @@ const CACHE_KEY='orderStatusCache';
 function readCache(){try{const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return c&&Array.isArray(c.data)&&c.data.length?c:null;}catch(e){return null;}}
 function writeCache(data,date){try{localStorage.setItem(CACHE_KEY,JSON.stringify({data:data,date:date,ts:Date.now()}));}catch(e){}}
 async function loadSharedData(){
+  carregarFotosNuvem();
   const dateEl=document.querySelector('.date');
   const cached=readCache();
   if(cached){ACTIVE_DATA=cached.data;loadedDate=cached.date||'';dateEl.textContent='A atualizar…';fillFilters();render();}
@@ -342,6 +346,86 @@ function fillFilters(){
   fill($('seller'),'Todos os vendedores',sellers,sel);
   fill($('driver'),'Todos os motoristas',drivers,drv);
 }
+// ===== Fotos dos vendedores (partilhadas na nuvem) =====
+// Opcional: fotos fixas no código -> 'Nome Completo':'data:image/jpeg;base64,...'
+const FOTOS_VENDEDORES={};
+const FOTOS_CACHE_KEY='orderstatus_fotos_cloud_v1';
+const chaveFoto=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+let FOTOS_NUVEM=(()=>{try{return JSON.parse(localStorage.getItem(FOTOS_CACHE_KEY)||'{}')||{}}catch(e){return {}}})();
+function gravarCacheFotos(){try{localStorage.setItem(FOTOS_CACHE_KEY,JSON.stringify(FOTOS_NUVEM))}catch(e){}}
+function fotoVendedor(nome){
+  const k=chaveFoto(nome); if(!k) return '';
+  if(FOTOS_NUVEM[k]) return FOTOS_NUVEM[k];
+  for(const n in FOTOS_VENDEDORES){ if(chaveFoto(n)===k) return FOTOS_VENDEDORES[n]; }
+  return '';
+}
+async function carregarFotosNuvem(){
+  try{
+    const res=await apiJsonp({action:'fotos'});
+    if(res&&res.fotos&&typeof res.fotos==='object'){ FOTOS_NUVEM=res.fotos; gravarCacheFotos(); render(); return true; }
+  }catch(e){}
+  return false;
+}
+function iniciaisNome(nome){
+  const p=String(nome||'').trim().split(/\s+/).filter(Boolean);
+  if(!p.length) return '?';
+  return (p[0][0]+(p.length>1?p[p.length-1][0]:'')).toUpperCase();
+}
+function corNome(nome){
+  let h=0; const k=chaveFoto(nome); for(let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0;
+  return `hsl(${h%360} 45% 42%)`;
+}
+function avatarVendedor(nome){
+  const n=String(nome||'').trim();
+  if(!n) return '<span class="s-av none" aria-hidden="true">?</span>';
+  const foto=fotoVendedor(n);
+  return `<button type="button" class="s-av" data-av="${esc(n)}" style="${foto?'':'background:'+corNome(n)}" title="Mudar a foto de ${esc(n)}" aria-label="Foto de ${esc(n)}">${foto?`<img src="${esc(foto)}" alt="">`:esc(iniciaisNome(n))}</button>`;
+}
+function enviarFotoNuvem_(k,foto){
+  return new Promise(resolve=>{
+    let frame=document.getElementById('orderStatusPostFrame');
+    if(!frame){frame=document.createElement('iframe');frame.id='orderStatusPostFrame';frame.name='orderStatusPostFrame';frame.style.display='none';document.body.appendChild(frame);}
+    const form=document.createElement('form');form.method='POST';form.action=API_URL;form.target=frame.name;form.style.display='none';
+    Object.entries({action:'fotos_save',chave:k,foto:foto}).forEach(([n,v])=>{const i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;form.appendChild(i);});
+    document.body.appendChild(form);form.submit();form.remove();
+    const t0=Date.now();
+    const check=async()=>{
+      try{const r=await apiJsonp({action:'fotos'});if(r&&r.fotos&&r.fotos[k]===foto){resolve(true);return;}}catch(e){}
+      if(Date.now()-t0>20000){resolve(false);return;}
+      setTimeout(check,1500);
+    };
+    setTimeout(check,1500);
+  });
+}
+function guardarFotoVendedor(nome,file){
+  if(!file||!/^image\//.test(file.type)) return;
+  const img=new Image(), url=URL.createObjectURL(file);
+  img.onload=()=>{
+    const S=112, c=document.createElement('canvas'); c.width=c.height=S;
+    const side=Math.min(img.width,img.height), sx=(img.width-side)/2, sy=(img.height-side)/2;
+    c.getContext('2d').drawImage(img,sx,sy,side,side,0,0,S,S);
+    URL.revokeObjectURL(url);
+    let q=0.72, foto=c.toDataURL('image/jpeg',q);
+    while(foto.length>8500&&q>0.3){q-=0.08;foto=c.toDataURL('image/jpeg',q);}
+    if(foto.length>8500){alert('A foto é demasiado complexa. Experimenta outra.');return;}
+    const k=chaveFoto(nome);
+    FOTOS_NUVEM[k]=foto; gravarCacheFotos(); render();
+    showToast('A guardar a foto para toda a equipa…');
+    enviarFotoNuvem_(k,foto).then(ok=>showToast(ok?'Foto guardada para toda a equipa ✓':'Não ficou guardada na nuvem. Falta atualizar o Apps Script.'));
+  };
+  img.onerror=()=>URL.revokeObjectURL(url);
+  img.src=url;
+}
+(function(){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.hidden=true; document.body.appendChild(inp);
+  let alvo='';
+  inp.addEventListener('change',()=>{ if(inp.files[0]&&alvo) guardarFotoVendedor(alvo,inp.files[0]); inp.value=''; });
+  document.addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('.s-av[data-av]'); if(!b) return;
+    alvo=b.getAttribute('data-av');
+    if(confirm('Mudar a foto de '+alvo+'?\n\nA nova foto fica visível para toda a equipa.')) inp.click();
+  });
+})();
 function render(){
   const q=$('search').value.trim().toLowerCase(), s=$('seller').value, d=$('driver').value;
   const voltaInfo=computeVolta();
@@ -373,7 +457,7 @@ function render(){
         <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
         <div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>
       </div>
-      <div class="seller"><span class="s-dot">•</span><span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'—')}</span></div>
+      <div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'—')}</span></div>
       <div class="driver">
         <div class="d-col"><div class="label">Motorista</div><div class="d-name">${esc(x.motorista||'—')}</div></div>
         <div class="d-col"><div class="label">Entrega</div><div class="d-name${info?` t${Math.min(info.numero,3)}`:''}">${info?`${info.numero}ª volta`:'—'}</div></div>
