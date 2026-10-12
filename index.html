@@ -77,7 +77,9 @@ input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:1
 .s-dot{color:var(--muted)}.s-label{color:var(--muted)}
 .seller-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:2px}
 .seller-txt{display:flex;flex-direction:column;min-width:0;line-height:1.25}
-.seller-main{display:flex;gap:6px;min-width:0;align-items:baseline}
+.seller-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.seller-main .s-label{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.seller-main .seller-name{font-weight:800;font-size:15.5px;margin-left:0;color:var(--text)}
 .seller-by{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
 .driver{display:grid;grid-template-columns:1fr 1fr;margin-top:14px;background:var(--panel);border-radius:14px;padding:16px 0}
 .d-col{min-width:0;text-align:center;padding:0 12px}
@@ -486,7 +488,7 @@ function renderRetained(){
   const money=v=>{const n=Number(v);return v!==''&&v!=null&&Number.isFinite(n)?n.toLocaleString('pt-PT',{style:'currency',currency:'EUR'}):'—'};
   $('cards').innerHTML=[...groups.values()].sort((a,b)=>String(a[0].nome).localeCompare(String(b[0].nome),'pt-PT')).map(items=>{
     const x=items[0];const total=items.reduce((n,r)=>n+(Number(r.valor)||0),0);
-    return `<article class="card retained-card"><div class="c-head"><div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div><div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'Não identificado')}</span></span>${(()=>{const por=[...new Set(items.map(colocouPor).filter(Boolean))].join(', ');return por?`<span class="seller-by">Colocada por: ${esc(por)}</span>`:'';})()}</span></div><div class="retained-summary"><span class="retained-badge">${items.length} encomenda${items.length===1?'':'s'} retida${items.length===1?'':'s'}</span> · Valor total: <b>${money(total)}</b></div><div class="retained-orders">${items.map(r=>`<div class="retained-order"><strong>Encomenda ${esc(r.id||'—')}</strong><div class="retained-meta"><span>Data: ${esc(r.data||'—')}</span><span>Valor: ${money(r.valor)}</span>${r.referencia?`<span>Ref.: ${esc(r.referencia)}</span>`:''}</div>${r.bloqueio?`<div>Bloqueio: <b>${esc(r.bloqueio)}</b></div>`:''}${r.motivo?`<div>Estado/recusa: <b>${esc(r.motivo)}</b></div>`:''}</div>`).join('')}</div></article>`;
+    return `<article class="card retained-card"><div class="c-head"><div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div><div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor</span><span class="seller-name">${esc(x.vendedor||'Não identificado')}</span></span>${(()=>{const por=[...new Set(items.map(colocouPor).filter(Boolean))].join(', ');return por?`<span class="seller-by">Colocada por ${esc(por)}</span>`:'';})()}</span></div><div class="retained-summary"><span class="retained-badge">${items.length} encomenda${items.length===1?'':'s'} retida${items.length===1?'':'s'}</span> · Valor total: <b>${money(total)}</b></div><div class="retained-orders">${items.map(r=>`<div class="retained-order"><strong>Encomenda ${esc(r.id||'—')}</strong><div class="retained-meta"><span>Data: ${esc(r.data||'—')}</span><span>Valor: ${money(r.valor)}</span>${r.referencia?`<span>Ref.: ${esc(r.referencia)}</span>`:''}</div>${r.bloqueio?`<div>Bloqueio: <b>${esc(r.bloqueio)}</b></div>`:''}${r.motivo?`<div>Estado/recusa: <b>${esc(r.motivo)}</b></div>`:''}</div>`).join('')}</div></article>`;
   }).join('');
   if(typeof cfgRefresh==='function')cfgRefresh();
 }
@@ -601,7 +603,7 @@ function render(){
         <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
         <div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>
       </div>
-      <div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'—')}</span></span>${colocouPor(x)?`<span class="seller-by">Colocada por: ${esc(colocouPor(x))}</span>`:''}</span></div>
+      <div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor</span><span class="seller-name">${esc(x.vendedor||'—')}</span></span>${colocouPor(x)?`<span class="seller-by">Colocada por ${esc(colocouPor(x))}</span>`:''}</span></div>
       <div class="driver">
         <div class="d-col"><div class="label">Motorista</div><div class="d-name">${esc(x.motorista||'—')}</div></div>
         <div class="d-col"><div class="label">Entrega</div><div class="d-name${info?` t${Math.min(info.numero,3)}`:''}">${info?`${info.numero}ª volta`:'—'}</div></div>
