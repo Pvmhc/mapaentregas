@@ -188,7 +188,9 @@ html.nosite body{overflow:hidden}
 .sitepick p{margin:0 0 20px;color:var(--muted);font-size:14px}
 .site-btns{display:flex;flex-direction:column;gap:12px;width:min(290px,80vw);margin:0 auto}
 .site-btns button{height:64px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:20px;font-weight:800;cursor:pointer;box-shadow:0 1px 3px rgba(15,23,42,.08);-webkit-tap-highlight-color:transparent}
+.site-btns button{display:flex;align-items:center;justify-content:center;gap:12px}
 .site-btns button:active{transform:scale(.98)}
+.site-img{width:44px;height:44px;border-radius:12px;object-fit:cover;flex:0 0 44px}
 .site-chip{margin-left:6px;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:12px;font-weight:800;cursor:pointer;vertical-align:middle}
 </style><script>try{if(!sessionStorage.getItem('orderStatusSite'))document.documentElement.classList.add('nosite');}catch(e){document.documentElement.classList.add('nosite');}</script></head>
 <body>
@@ -270,6 +272,11 @@ html.nosite body{overflow:hidden}
   <div class="pin-box cfg-box">
     <h2>Definições</h2><p>Fotos dos vendedores: toque em “Carregar” para escolher a foto de cada um.</p>
     <div id="cfgList" class="cfg-list"></div>
+    <div class="cfg-sec" id="cfgSitesSec">
+      <h3>Fotos dos sites</h3>
+      <p>Aparecem nos botões Faro / Algoz ao entrar. Ficam guardadas para toda a equipa.</p>
+      <div id="cfgSites" class="cfg-list" style="max-height:none"></div>
+    </div>
     <div class="cfg-sec" id="emSec">
       <h3>Emails de notificação</h3>
       <p>Recebem um email sempre que o mapa é atualizado.</p>
@@ -449,7 +456,7 @@ function fotoVendedor(nome){
 async function carregarFotosNuvem(){
   try{
     const res=await apiJsonp({action:'fotos'});
-    if(res&&res.fotos&&typeof res.fotos==='object'){ FOTOS_NUVEM=res.fotos; gravarCacheFotos(); render(); return true; }
+    if(res&&res.fotos&&typeof res.fotos==='object'){ FOTOS_NUVEM=res.fotos; gravarCacheFotos(); render(); pintarSites(); cfgSitesRefresh(); return true; }
   }catch(e){}
   return false;
 }
@@ -496,7 +503,7 @@ function guardarFotoVendedor(nome,file){
     while(foto.length>8500&&q>0.3){q-=0.08;foto=c.toDataURL('image/jpeg',q);}
     if(foto.length>8500){alert('A foto é demasiado complexa. Experimenta outra.');return;}
     const k=chaveFoto(nome);
-    FOTOS_NUVEM[k]=foto; gravarCacheFotos(); render();
+    FOTOS_NUVEM[k]=foto; gravarCacheFotos(); render(); pintarSites(); cfgSitesRefresh();
     showToast('A guardar a foto para toda a equipa…');
     enviarFotoNuvem_(k,foto).then(ok=>showToast(ok?'Foto guardada para toda a equipa ✓':'Não ficou guardada na nuvem. Falta atualizar o Apps Script.'));
   };
@@ -693,6 +700,7 @@ function cfgDraw(){[...cfgDots.children].forEach((d,i)=>d.classList.toggle('on',
 function cfgPinClose(){cfgPinBack.classList.remove('show');cfgVal='';cfgDraw();}
 function cfgRefresh(){
   if(!cfgPanel.classList.contains('show'))return;
+  cfgSitesRefresh();
   const nomes=unique(ACTIVE_DATA.map(x=>x.vendedor));
   $('cfgList').innerHTML=nomes.length?nomes.map(n=>{
     const f=fotoVendedor(n);
@@ -863,7 +871,23 @@ try{
   mq.addEventListener('change',e=>{let saved=null;try{saved=localStorage.getItem('orderStatusTheme')}catch(_){}if(!saved)setTheme(e.matches?'dark':'light',false);});
 }catch(e){}
 document.querySelector('.date').addEventListener('click',()=>{if(/Toque aqui/.test(document.querySelector('.date').textContent))loadSharedData();});
+const fotoSite=x=>FOTOS_NUVEM['site_'+x]||'';
+function pintarSites(){
+  document.querySelectorAll('.site-btns [data-site]').forEach(b=>{
+    const x=b.dataset.site,f=fotoSite(x);
+    b.innerHTML=(f?`<img class="site-img" src="${esc(f)}" alt="">`:'')+`<span>${SITE_NOMES[x]}</span>`;
+  });
+}
+function cfgSitesRefresh(){
+  const el=$('cfgSites');if(!el)return;
+  el.innerHTML=['faro','algoz'].map(x=>{
+    const f=fotoSite(x);
+    return `<div class="cfg-row"><span class="s-av" style="${f?'':'background:#64748b'}">${f?`<img src="${esc(f)}" alt="">`:esc(SITE_NOMES[x][0])}</span><span class="cfg-name">${SITE_NOMES[x]}</span><button type="button" class="cfg-up" data-nome="site_${x}">${f?'Mudar':'Carregar'}</button></div>`;
+  }).join('');
+}
+$('cfgSites').addEventListener('click',e=>{const b=e.target.closest('.cfg-up');if(b)escolherFotoVendedor(b.dataset.nome);});
 function aplicarSite(){
+  pintarSites();
   CACHE_KEY='orderStatusCache_'+(SITE||'faro');
   const c=$('siteChip');if(c)c.textContent=(SITE_NOMES[SITE]||'')+' ⇄';
 }
@@ -883,7 +907,7 @@ function trocarSite(){
 $('sitePick').addEventListener('click',e=>{const b=e.target.closest('[data-site]');if(b)selectSite(b.dataset.site);});
 $('siteChip').addEventListener('click',trocarSite);
 aplicarSite();
-if(SITE)loadSharedData();
+if(SITE)loadSharedData();else carregarFotosNuvem();
 </script>
 <script>
 // PWA: registo do Service Worker + instalação
