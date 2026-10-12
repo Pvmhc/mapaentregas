@@ -163,6 +163,20 @@ html.locked body{overflow:hidden}
 .pin-pad button{height:50px;border:0;border-radius:14px;background:var(--pad);font-size:20px;font-weight:700;color:var(--text);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .pin-pad button:active{background:var(--pad-active)}
 .pin-pad .ghost{background:transparent;font-size:14px;color:var(--muted);font-weight:600}
+#pinBack.over{z-index:210}
+.cfg-box{max-height:90vh;overflow:auto}
+.cfg-sec{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);text-align:left}
+.cfg-box .cfg-sec h3{margin:0;font-size:14px;font-weight:800;text-align:left}
+.cfg-box .cfg-sec p{margin:3px 0 0;font-size:12px;color:var(--muted);text-align:left}
+.em-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.em-row{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px 4px 4px 12px}
+.em-row span{flex:1;min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.em-del{border:0;background:transparent;color:#dc2626;font-size:22px;line-height:1;width:36px;height:36px;border-radius:10px;cursor:pointer;flex:0 0 auto}
+.em-del:active{background:var(--btn-active)}
+.em-add{display:flex;gap:8px;margin-top:10px}
+.em-add input{flex:1;min-width:0;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--btn);color:var(--text);padding:0 10px;font-size:16px}
+.cfg-box .cfg-sec .em-empty{margin:10px 0 0;text-align:center}
+.em-busy{opacity:.55;pointer-events:none}
 </style>
 </head>
 <body>
@@ -212,7 +226,7 @@ html.locked body{overflow:hidden}
 </div>
 <div id="pinBack" class="pin-back" role="dialog" aria-modal="true" aria-label="Introduzir PIN">
   <div class="pin-box">
-    <h2>Importar Excel</h2><p>Introduza o PIN para continuar</p>
+    <h2 id="pinTitle">Importar Excel</h2><p>Introduza o PIN para continuar</p>
     <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
     <div class="pin-pad" id="pinPad">
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
@@ -234,10 +248,19 @@ html.locked body{overflow:hidden}
     </div>
   </div>
 </div>
-<div id="cfgPanel" class="pin-back" role="dialog" aria-modal="true" aria-label="Fotos dos vendedores">
+<div id="cfgPanel" class="pin-back" role="dialog" aria-modal="true" aria-label="Definições">
   <div class="pin-box cfg-box">
-    <h2>Fotos dos vendedores</h2><p>Toque em “Carregar” para escolher a foto de cada vendedor.</p>
+    <h2>Definições</h2><p>Fotos dos vendedores: toque em “Carregar” para escolher a foto de cada um.</p>
     <div id="cfgList" class="cfg-list"></div>
+    <div class="cfg-sec" id="emSec">
+      <h3>Emails de notificação</h3>
+      <p>Recebem um email sempre que o mapa é atualizado.</p>
+      <div id="emLocked"><button id="emUnlock" class="cfg-up" type="button" style="width:100%;margin-top:10px">Gerir emails (PIN de administrador)</button></div>
+      <div id="emBody" hidden>
+        <div id="emList" class="em-list"></div>
+        <div class="em-add"><input id="emInput" type="email" inputmode="email" autocomplete="off" autocapitalize="off" placeholder="nome@empresa.pt" aria-label="Novo email"><button id="emAdd" class="cfg-up" type="button">Adicionar</button></div>
+      </div>
+    </div>
     <button id="cfgClose" class="help-ok" type="button">Fechar</button>
   </div>
 </div>
@@ -599,7 +622,7 @@ function cfgKey(k){
   if(!/^\d$/.test(k)||cfgVal.length>=4)return;
   cfgVal+=k;cfgDraw();
   if(cfgVal.length===4){
-    if(cfgVal===CFG_PIN){cfgPinClose();cfgPanel.classList.add('show');cfgRefresh();}
+    if(cfgVal===CFG_PIN){cfgPinClose();emBloquear();cfgPanel.classList.add('show');cfgRefresh();}
     else{cfgDots.classList.add('err');if(navigator.vibrate)navigator.vibrate(120);
       setTimeout(()=>{cfgDots.classList.remove('err');cfgVal='';cfgDraw();},400);}
   }
@@ -607,9 +630,9 @@ function cfgKey(k){
 $('cfgBtn').addEventListener('click',()=>{cfgVal='';cfgDraw();cfgPinBack.classList.add('show');});
 $('cfgPinPad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)cfgKey(b.dataset.k);});
 cfgPinBack.addEventListener('click',e=>{if(e.target===cfgPinBack)cfgPinClose();});
-$('cfgClose').addEventListener('click',()=>cfgPanel.classList.remove('show'));
+$('cfgClose').addEventListener('click',()=>{cfgPanel.classList.remove('show');emBloquear();});
 cfgPanel.addEventListener('click',e=>{
-  if(e.target===cfgPanel){cfgPanel.classList.remove('show');return;}
+  if(e.target===cfgPanel){cfgPanel.classList.remove('show');emBloquear();return;}
   const b=e.target.closest('.cfg-up');if(b)window.escolherFotoVendedor(b.dataset.nome);
 });
 document.addEventListener('keydown',e=>{
@@ -618,21 +641,66 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Backspace')cfgKey('b');
   else if(e.key==='Escape')cfgKey('x');
 });
-let pinVal='';
+let pinVal='',pinMode='import';
 const pinBack=$('pinBack'),pinDots=$('pinDots');
 function pinDraw(){[...pinDots.children].forEach((d,i)=>d.classList.toggle('on',i<pinVal.length));}
-function pinClose(){pinBack.classList.remove('show');pinVal='';pinDraw();}
+function pinClose(){pinBack.classList.remove('show','over');pinVal='';pinDraw();pinMode='import';}
 function pinKey(k){
   if(k==='x'){pinClose();return;}
   if(k==='b'){pinVal=pinVal.slice(0,-1);pinDraw();return;}
   if(!/^\d$/.test(k)||pinVal.length>=4)return;
   pinVal+=k;pinDraw();
   if(pinVal.length===4){
-    const candidate=pinVal;
-    // O PIN é validado no servidor quando a importação é submetida.
+    const candidate=pinVal,modo=pinMode;
+    // O PIN é validado no servidor quando a operação é submetida.
+    if(modo==='emails'){pinClose();emAbrir(candidate);return;}
     ADMIN_PIN_FOR_SAVE=candidate;pinClose();$('excelInput').click();
   }
 }
+// ===== Emails de notificação (guardados no servidor; operações validadas com o PIN de administrador) =====
+let EM_PIN='',EM_LIST=[],EM_BUSY=false;
+const EM_RE=/^[^@\s,;]+@[^@\s,;]+\.[^@\s,;]+$/;
+function emBloquear(){EM_PIN='';EM_LIST=[];$('emBody').hidden=true;$('emLocked').hidden=false;$('emInput').value='';}
+function emRender(){
+  $('emList').innerHTML=EM_LIST.length
+    ?EM_LIST.map((e,i)=>`<div class="em-row"><span title="${esc(e)}">${esc(e)}</span><button type="button" class="em-del" data-i="${i}" aria-label="Remover ${esc(e)}">×</button></div>`).join('')
+    :'<p class="em-empty">Ainda não há emails. Ninguém recebe notificações.</p>';
+}
+function emBusy(b){EM_BUSY=b;$('emSec').classList.toggle('em-busy',b);}
+function emErro(err){alert('Não foi possível atualizar os emails.\n\n'+(err&&err.message?err.message:err));}
+async function emOperacao(action,extra){
+  const token='em_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+  const res=await postToApi({action,token,pin:EM_PIN,...extra});
+  return (res&&res.result&&res.result.emails)||[];
+}
+async function emAbrir(pin){
+  EM_PIN=pin;emBusy(true);
+  try{EM_LIST=await emOperacao('emails_get',{});$('emLocked').hidden=true;$('emBody').hidden=false;emRender();}
+  catch(err){EM_PIN='';emErro(err);}
+  emBusy(false);
+}
+async function emGuardar(lista){
+  emBusy(true);
+  try{EM_LIST=await emOperacao('emails_save',{emails:JSON.stringify(lista)});emRender();return true;}
+  catch(err){emErro(err);return false;}
+  finally{emBusy(false);}
+}
+$('emUnlock').addEventListener('click',()=>{pinMode='emails';$('pinTitle').textContent='Emails de notificação';pinVal='';pinDraw();pinBack.classList.add('over','show');});
+$('emAdd').addEventListener('click',async()=>{
+  if(EM_BUSY)return;
+  const v=$('emInput').value.trim().toLowerCase();
+  if(!v)return;
+  if(!EM_RE.test(v)||v.length>120){showToast('Email inválido');return;}
+  if(EM_LIST.some(x=>x.toLowerCase()===v)){showToast('Esse email já está na lista');return;}
+  if(await emGuardar([...EM_LIST,v])){$('emInput').value='';showToast('Email adicionado');}
+});
+$('emInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('emAdd').click();}});
+$('emList').addEventListener('click',async e=>{
+  const b=e.target.closest('.em-del');if(!b||EM_BUSY)return;
+  const i=+b.dataset.i,email=EM_LIST[i];if(!email)return;
+  if(!confirm('Remover '+email+' das notificações?'))return;
+  if(await emGuardar(EM_LIST.filter((_,k)=>k!==i)))showToast('Email removido');
+});
 let toastTimer;
 function showToast(msg){
   let t=document.getElementById('toast');
@@ -680,7 +748,7 @@ $('cards').addEventListener('click',e=>{
     if(!left)showToast(`Número ${v} copiado. Se o Salesforce não abriu, abra-o e cole.`);
   },2200);
 });
-$('importBtn').addEventListener('click',()=>{pinVal='';pinDraw();pinBack.classList.add('show');});
+$('importBtn').addEventListener('click',()=>{pinMode='import';$('pinTitle').textContent='Importar Excel';pinVal='';pinDraw();pinBack.classList.add('show');});
 $('pinPad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)pinKey(b.dataset.k);});
 pinBack.addEventListener('click',e=>{if(e.target===pinBack)pinClose();});
 document.addEventListener('keydown',e=>{
