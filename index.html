@@ -76,6 +76,8 @@ input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:1
 .s-av.none{cursor:default;background:var(--panel);color:var(--muted)}
 .s-dot{color:var(--muted)}.s-label{color:var(--muted)}
 .seller-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:2px}
+.seller-txt{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.seller-by{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:2px}
 .driver{display:grid;grid-template-columns:1fr 1fr;margin-top:14px;background:var(--panel);border-radius:14px;padding:16px 0}
 .d-col{min-width:0;text-align:center;padding:0 12px}
 .d-col+.d-col{border-left:1px solid var(--line)}
@@ -272,6 +274,13 @@ html.nosite body{overflow:hidden}
   <div class="pin-box cfg-box">
     <h2>Definições</h2><p>Fotos dos vendedores: toque em “Carregar” para escolher a foto de cada um.</p>
     <div id="cfgList" class="cfg-list"></div>
+    <div class="cfg-sec" id="propSec">
+      <h3>Proprietários das contas</h3>
+      <p>Quando a televenda coloca a encomenda, aparece o nome dela. Importa um Excel com o nº de cliente e o nome do proprietário para mostrar sempre o vendedor certo. Importar de novo só acrescenta/atualiza clientes.</p>
+      <p id="propCount"></p>
+      <button id="propImport" class="em-btn" type="button" style="width:100%;margin-top:12px">📥 Importar Excel de proprietários</button>
+      <input id="propInput" type="file" accept=".xlsx,.xls,.csv" hidden>
+    </div>
     <div class="cfg-sec" id="cfgSitesSec">
       <h3>Fotos dos sites</h3>
       <p>Aparecem nos botões Faro / Algoz ao entrar. Ficam guardadas para toda a equipa.</p>
@@ -308,6 +317,35 @@ const API_URL='https://script.google.com/macros/s/AKfycbye4o-a5gl067XL0SzzoUOdpY
 let ADMIN_PIN_FOR_SAVE='';
 let SITE=(()=>{try{const x=sessionStorage.getItem('orderStatusSite');return x==='algoz'||x==='faro'?x:'';}catch(e){return '';}})();
 const SITE_NOMES={faro:'Faro',algoz:'Algoz'};
+// ===== Proprietários das contas (televenda -> proprietário real) =====
+const PROP_CACHE_KEY='orderstatus_prop_v1';
+let PROP=(()=>{try{return JSON.parse(localStorage.getItem(PROP_CACHE_KEY)||'{}')||{}}catch(e){return {}}})();
+function aplicarProp(arr){
+  (arr||[]).forEach(x=>{
+    if(x._vo===undefined)x._vo=x.vendedor;
+    const p=PROP[x.cliente];
+    x.vendedor=p||x._vo;
+  });
+  return arr;
+}
+// Quem colocou a encomenda (televenda), quando é diferente do proprietário da conta.
+function colocouPor(x){const o=String(x&&x._vo||'').trim();return o&&o!==x.vendedor?o:'';}
+function propInfoAtualiza(){
+  const el=document.getElementById('propCount');
+  if(el)el.textContent=Object.keys(PROP).length+' clientes com proprietário definido.';
+}
+async function carregarProp(){
+  try{
+    const res=await apiJsonp({action:'prop'});
+    if(res&&res.map&&typeof res.map==='object'){
+      PROP=res.map;
+      try{localStorage.setItem(PROP_CACHE_KEY,JSON.stringify(PROP));}catch(e){}
+      aplicarProp(ACTIVE_DATA);fillFilters();render();propInfoAtualiza();cfgRefresh();
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 function apiJsonp(params={}){
   return new Promise((resolve,reject)=>{
     const cb='__orderStatusCb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
@@ -345,16 +383,17 @@ function writeCache(data,date){try{localStorage.setItem(CACHE_KEY,JSON.stringify
 async function loadSharedData(){
   const siteReq=SITE;
   carregarFotosNuvem();
+  carregarProp();
   const dateEl=document.querySelector('.date');
   const cached=readCache();
-  if(cached){ACTIVE_DATA=cached.data;loadedDate=cached.date||'';dateEl.textContent='A atualizar…';fillFilters();render();}
+  if(cached){ACTIVE_DATA=aplicarProp(cached.data);loadedDate=cached.date||'';dateEl.textContent='A atualizar…';fillFilters();render();}
   for(let i=0;i<3;i++){
     try{
       const res=await apiJsonp({action:'get'});
       if(siteReq!==SITE)return;
       if(res&&res.error)throw new Error(res.error);
       if(res&&res.hasData&&Array.isArray(res.data)){
-        ACTIVE_DATA=res.data;loadedDate=res.date||'';writeCache(res.data,loadedDate);
+        ACTIVE_DATA=aplicarProp(res.data);loadedDate=res.date||'';writeCache(res.data,loadedDate);
         dateEl.textContent='Dados partilhados — '+(loadedDate||'última importação');
       }else{
         ACTIVE_DATA=[];loadedDate='';try{localStorage.removeItem(CACHE_KEY)}catch(e){}
@@ -367,7 +406,7 @@ async function loadSharedData(){
     }
   }
   if(cached){
-    ACTIVE_DATA=cached.data;loadedDate=cached.date||'';
+    ACTIVE_DATA=aplicarProp(cached.data);loadedDate=cached.date||'';
     dateEl.textContent='Sem ligação — dados guardados no telemóvel'+(cached.date?' ('+cached.date+')':'')+'. Toque aqui para atualizar';
   }else{
     ACTIVE_DATA=[];loadedDate='';
@@ -430,13 +469,13 @@ function fillFilters(){
 function setMode(mode){activeMode=mode;$('tabDeliveries').classList.toggle('selected',mode==='entregas');$('tabRetained').classList.toggle('selected',mode==='retidas');$('seller').value='';$('driver').value='';voltaSel=0;fillFilters();render();}
 function renderRetained(){
   const q=$('search').value.trim().toLowerCase(),seller=$('seller').value;
-  const rows=ACTIVE_DATA.filter(x=>isRetained(x)&&(!seller||x.vendedor===seller)&&(!q||[x.cliente,x.nome,x.cidade,x.vendedor,x.id,x.referencia,x.motivo,x.bloqueio].join(' ').toLowerCase().includes(q)));
+  const rows=ACTIVE_DATA.filter(x=>isRetained(x)&&(!seller||x.vendedor===seller)&&(!q||[x.cliente,x.nome,x.cidade,x.vendedor,x._vo,x.id,x.referencia,x.motivo,x.bloqueio].join(' ').toLowerCase().includes(q)));
   const groups=new Map();rows.forEach(x=>{const k=x.cliente||'sem-'+x.id;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x)});
   $('count').textContent=groups.size;$('empty').hidden=groups.size>0;
   const money=v=>{const n=Number(v);return v!==''&&v!=null&&Number.isFinite(n)?n.toLocaleString('pt-PT',{style:'currency',currency:'EUR'}):'—'};
   $('cards').innerHTML=[...groups.values()].sort((a,b)=>String(a[0].nome).localeCompare(String(b[0].nome),'pt-PT')).map(items=>{
     const x=items[0];const total=items.reduce((n,r)=>n+(Number(r.valor)||0),0);
-    return `<article class="card retained-card"><div class="c-head"><div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div><div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'Não identificado')}</span></div><div class="retained-summary"><span class="retained-badge">${items.length} encomenda${items.length===1?'':'s'} retida${items.length===1?'':'s'}</span> · Valor total: <b>${money(total)}</b></div><div class="retained-orders">${items.map(r=>`<div class="retained-order"><strong>Encomenda ${esc(r.id||'—')}</strong><div class="retained-meta"><span>Data: ${esc(r.data||'—')}</span><span>Valor: ${money(r.valor)}</span>${r.referencia?`<span>Ref.: ${esc(r.referencia)}</span>`:''}</div>${r.bloqueio?`<div>Bloqueio: <b>${esc(r.bloqueio)}</b></div>`:''}${r.motivo?`<div>Estado/recusa: <b>${esc(r.motivo)}</b></div>`:''}</div>`).join('')}</div></article>`;
+    return `<article class="card retained-card"><div class="c-head"><div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div><div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-txt"><span class="seller-name">${esc(x.vendedor||'Não identificado')}</span>${(()=>{const por=[...new Set(items.map(colocouPor).filter(Boolean))].join(', ');return por?`<span class="seller-by">Colocada por: ${esc(por)}</span>`:'';})()}</span></div><div class="retained-summary"><span class="retained-badge">${items.length} encomenda${items.length===1?'':'s'} retida${items.length===1?'':'s'}</span> · Valor total: <b>${money(total)}</b></div><div class="retained-orders">${items.map(r=>`<div class="retained-order"><strong>Encomenda ${esc(r.id||'—')}</strong><div class="retained-meta"><span>Data: ${esc(r.data||'—')}</span><span>Valor: ${money(r.valor)}</span>${r.referencia?`<span>Ref.: ${esc(r.referencia)}</span>`:''}</div>${r.bloqueio?`<div>Bloqueio: <b>${esc(r.bloqueio)}</b></div>`:''}${r.motivo?`<div>Estado/recusa: <b>${esc(r.motivo)}</b></div>`:''}</div>`).join('')}</div></article>`;
   }).join('');
   if(typeof cfgRefresh==='function')cfgRefresh();
 }
@@ -524,7 +563,7 @@ function render(){
   const voltaInfo=computeVolta();
   const out=ACTIVE_DATA.filter(x=>{
     if(isRetained(x))return false;
-    const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x.motorista,x.contacto,x.ordem,x.transporte,x.id].join(' ').toLowerCase();
+    const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x._vo,x.motorista,x.contacto,x.ordem,x.transporte,x.id].join(' ').toLowerCase();
     return (!q||hay.includes(q))&&(!s||x.vendedor===s)&&(!d||x.motorista===d)&&(!voltaSel||voltaOf(x,voltaInfo)===voltaSel);
   });
   const uniqueClients=new Set(out.map(x=>String(x.cliente||'').trim()).filter(Boolean));
@@ -551,7 +590,7 @@ function render(){
         <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
         <div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>
       </div>
-      <div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'—')}</span></div>
+      <div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-txt"><span class="seller-name">${esc(x.vendedor||'—')}</span>${colocouPor(x)?`<span class="seller-by">Colocada por: ${esc(colocouPor(x))}</span>`:''}</span></div>
       <div class="driver">
         <div class="d-col"><div class="label">Motorista</div><div class="d-name">${esc(x.motorista||'—')}</div></div>
         <div class="d-col"><div class="label">Entrega</div><div class="d-name${info?` t${Math.min(info.numero,3)}`:''}">${info?`${info.numero}ª volta`:'—'}</div></div>
@@ -647,7 +686,7 @@ function importExcel(file){
       if(!confirm('Vais importar este Excel para o site de '+SITE_NOMES[SITE]+'.\n\nOs dados atuais de '+SITE_NOMES[SITE]+' serão substituídos. O outro site não é alterado.\n\nContinuar?')){ADMIN_PIN_FOR_SAVE='';$('excelInput').value='';return;}
       const token='save_'+Date.now()+'_'+Math.random().toString(36).slice(2);
       postToApi({action:'save',token,pin:ADMIN_PIN_FOR_SAVE,date:importedDate,data:JSON.stringify(allImported)}).then(async result=>{
-        ACTIVE_DATA=allImported;loadedDate=importedDate;
+        ACTIVE_DATA=aplicarProp(allImported);loadedDate=importedDate;
         writeCache(allImported,importedDate);
         // Confirma o que ficou REALMENTE guardado na folha (e refresca a cache local).
         let aviso2='';
@@ -657,7 +696,7 @@ function importExcel(file){
             if(chk.data.length!==allImported.length){
               aviso2=`\n\n⚠ ATENÇÃO: a folha tem ${chk.data.length} registos mas importaste ${allImported.length}. Os dados antigos não foram substituídos — confirma que a implementação do Apps Script foi atualizada (Implementar > Gerir implementações > Editar > Nova versão).`;
             }
-            ACTIVE_DATA=chk.data;loadedDate=chk.date||importedDate;writeCache(chk.data,loadedDate);
+            ACTIVE_DATA=aplicarProp(chk.data);loadedDate=chk.date||importedDate;writeCache(chk.data,loadedDate);
           }
         }catch(e){}
         document.querySelector('.date').textContent='Dados partilhados — '+loadedDate;
@@ -871,6 +910,48 @@ try{
   mq.addEventListener('change',e=>{let saved=null;try{saved=localStorage.getItem('orderStatusTheme')}catch(_){}if(!saved)setTheme(e.matches?'dark':'light',false);});
 }catch(e){}
 document.querySelector('.date').addEventListener('click',()=>{if(/Toque aqui/.test(document.querySelector('.date').textContent))loadSharedData();});
+function importarProprietarios(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+      if(!rows.length)throw new Error('O ficheiro não tem dados.');
+      const norm=k=>String(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const headers=Object.keys(rows[0]);
+      let kc=headers.find(h=>/^(idclientesap|idcliente|cliente|ncliente|nrcliente|numerocliente|numcliente|codcliente|codigocliente)$/.test(norm(h)))
+          ||headers.find(h=>norm(h).includes('cliente')&&!norm(h).includes('nome'));
+      let ko=headers.find(h=>h!==kc&&/propriet|vendedor|gestor|owner/.test(norm(h)));
+      if(!kc||!ko){
+        if(headers.length<2)throw new Error('Preciso de pelo menos 2 colunas: nº de cliente e nome do proprietário.');
+        if(!kc)kc=headers.find(h=>h!==ko)||headers[0];
+        if(!ko)ko=headers.find(h=>h!==kc);
+      }
+      const mapa=new Map();
+      rows.forEach(r=>{
+        const c=String(r[kc]??'').trim().replace(/\.0+$/,'');
+        const n=String(r[ko]??'').trim();
+        if(c&&n)mapa.set(c,n);
+      });
+      const lista=[...mapa].map(([cliente,proprietario])=>({cliente,proprietario}));
+      if(!lista.length)throw new Error('Não encontrei linhas com nº de cliente e proprietário.');
+      const ex=lista.slice(0,3).map(x=>x.cliente+' → '+x.proprietario).join('\n');
+      if(!confirm('Colunas usadas:\n• Cliente: «'+kc+'»\n• Proprietário: «'+ko+'»\n\n'+lista.length+' clientes. Exemplos:\n'+ex+'\n\nImportar?'))return;
+      const token='prop_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+      showToast('A guardar proprietários…');
+      postToApi({action:'prop_save',token,pin:CFG_PIN,data:JSON.stringify(lista)}).then(async res=>{
+        await carregarProp();
+        const r=(res&&res.result)||{};
+        alert('Proprietários guardados.\n\nNovos: '+(r.novos??'—')+'\nAtualizados: '+(r.alterados??'—')+'\nTotal na lista: '+(r.total??Object.keys(PROP).length));
+      }).catch(err=>alert('Falha ao guardar os proprietários.\n\n'+(err&&err.message?err.message:err)));
+    }catch(err){alert('Não foi possível importar o ficheiro.\n\n'+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+$('propImport').addEventListener('click',()=>$('propInput').click());
+$('propInput').addEventListener('change',e=>{if(e.target.files[0])importarProprietarios(e.target.files[0]);e.target.value='';});
+propInfoAtualiza();
 const fotoSite=x=>FOTOS_NUVEM['site_'+x]||'';
 function pintarSites(){
   document.querySelectorAll('.site-btns [data-site]').forEach(b=>{
