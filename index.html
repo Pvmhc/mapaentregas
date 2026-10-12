@@ -77,7 +77,8 @@ input,select{width:100%;height:44px;border:1px solid var(--line);border-radius:1
 .s-dot{color:var(--muted)}.s-label{color:var(--muted)}
 .seller-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:2px}
 .seller-txt{display:flex;flex-direction:column;min-width:0;line-height:1.25}
-.seller-by{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:2px}
+.seller-main{display:flex;gap:6px;min-width:0;align-items:baseline}
+.seller-by{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
 .driver{display:grid;grid-template-columns:1fr 1fr;margin-top:14px;background:var(--panel);border-radius:14px;padding:16px 0}
 .d-col{min-width:0;text-align:center;padding:0 12px}
 .d-col+.d-col{border-left:1px solid var(--line)}
@@ -331,7 +332,15 @@ function aplicarProp(arr){
   return arr;
 }
 // Quem colocou a encomenda (televenda), quando é diferente do proprietário da conta.
-function colocouPor(x){const o=String(x&&x._vo||'').trim();return o&&o!==x.vendedor?o:'';}
+const _PART=['de','do','da','dos','das','e'];
+const nomeTokens=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(t=>t&&!_PART.includes(t));
+// Mesma pessoa = nome igual sem acentos/partículas, ou mesmo primeiro e último nome.
+function mesmaPessoa(a,b){
+  const A=nomeTokens(a),B=nomeTokens(b);
+  if(!A.length||!B.length)return false;
+  return A.join(' ')===B.join(' ')||(A[0]===B[0]&&A[A.length-1]===B[B.length-1]);
+}
+function colocouPor(x){const o=String(x&&x._vo||'').trim();return o&&!mesmaPessoa(o,x.vendedor)?o:'';}
 function propInfoAtualiza(){
   const el=document.getElementById('propCount');
   if(el)el.textContent=Object.keys(PROP).length+' clientes com proprietário definido.';
@@ -477,7 +486,7 @@ function renderRetained(){
   const money=v=>{const n=Number(v);return v!==''&&v!=null&&Number.isFinite(n)?n.toLocaleString('pt-PT',{style:'currency',currency:'EUR'}):'—'};
   $('cards').innerHTML=[...groups.values()].sort((a,b)=>String(a[0].nome).localeCompare(String(b[0].nome),'pt-PT')).map(items=>{
     const x=items[0];const total=items.reduce((n,r)=>n+(Number(r.valor)||0),0);
-    return `<article class="card retained-card"><div class="c-head"><div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div><div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-txt"><span class="seller-name">${esc(x.vendedor||'Não identificado')}</span>${(()=>{const por=[...new Set(items.map(colocouPor).filter(Boolean))].join(', ');return por?`<span class="seller-by">Colocada por: ${esc(por)}</span>`:'';})()}</span></div><div class="retained-summary"><span class="retained-badge">${items.length} encomenda${items.length===1?'':'s'} retida${items.length===1?'':'s'}</span> · Valor total: <b>${money(total)}</b></div><div class="retained-orders">${items.map(r=>`<div class="retained-order"><strong>Encomenda ${esc(r.id||'—')}</strong><div class="retained-meta"><span>Data: ${esc(r.data||'—')}</span><span>Valor: ${money(r.valor)}</span>${r.referencia?`<span>Ref.: ${esc(r.referencia)}</span>`:''}</div>${r.bloqueio?`<div>Bloqueio: <b>${esc(r.bloqueio)}</b></div>`:''}${r.motivo?`<div>Estado/recusa: <b>${esc(r.motivo)}</b></div>`:''}</div>`).join('')}</div></article>`;
+    return `<article class="card retained-card"><div class="c-head"><div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div><div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'Não identificado')}</span></span>${(()=>{const por=[...new Set(items.map(colocouPor).filter(Boolean))].join(', ');return por?`<span class="seller-by">Colocada por: ${esc(por)}</span>`:'';})()}</span></div><div class="retained-summary"><span class="retained-badge">${items.length} encomenda${items.length===1?'':'s'} retida${items.length===1?'':'s'}</span> · Valor total: <b>${money(total)}</b></div><div class="retained-orders">${items.map(r=>`<div class="retained-order"><strong>Encomenda ${esc(r.id||'—')}</strong><div class="retained-meta"><span>Data: ${esc(r.data||'—')}</span><span>Valor: ${money(r.valor)}</span>${r.referencia?`<span>Ref.: ${esc(r.referencia)}</span>`:''}</div>${r.bloqueio?`<div>Bloqueio: <b>${esc(r.bloqueio)}</b></div>`:''}${r.motivo?`<div>Estado/recusa: <b>${esc(r.motivo)}</b></div>`:''}</div>`).join('')}</div></article>`;
   }).join('');
   if(typeof cfgRefresh==='function')cfgRefresh();
 }
@@ -592,7 +601,7 @@ function render(){
         <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
         <div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>
       </div>
-      <div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-txt"><span class="seller-name">${esc(x.vendedor||'—')}</span>${colocouPor(x)?`<span class="seller-by">Colocada por: ${esc(colocouPor(x))}</span>`:''}</span></div>
+      <div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'—')}</span></span>${colocouPor(x)?`<span class="seller-by">Colocada por: ${esc(colocouPor(x))}</span>`:''}</span></div>
       <div class="driver">
         <div class="d-col"><div class="label">Motorista</div><div class="d-name">${esc(x.motorista||'—')}</div></div>
         <div class="d-col"><div class="label">Entrega</div><div class="d-name${info?` t${Math.min(info.numero,3)}`:''}">${info?`${info.numero}ª volta`:'—'}</div></div>
