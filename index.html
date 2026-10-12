@@ -329,7 +329,7 @@ async function loadSharedData(){
         ACTIVE_DATA=res.data;loadedDate=res.date||'';writeCache(res.data,loadedDate);
         dateEl.textContent='Dados partilhados — '+(loadedDate||'última importação');
       }else{
-        ACTIVE_DATA=[];loadedDate='';
+        ACTIVE_DATA=[];loadedDate='';try{localStorage.removeItem(CACHE_KEY)}catch(e){}
         dateEl.textContent='A aguardar a primeira importação do administrador';
       }
       fillFilters();render();return;
@@ -616,13 +616,25 @@ function importExcel(file){
       const allImported=imported.concat(retained);
       if(!ADMIN_PIN_FOR_SAVE) throw new Error('Introduza o PIN de administrador antes de importar.');
       const token='save_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-      postToApi({action:'save',token,pin:ADMIN_PIN_FOR_SAVE,date:importedDate,data:JSON.stringify(allImported)}).then(result=>{
+      postToApi({action:'save',token,pin:ADMIN_PIN_FOR_SAVE,date:importedDate,data:JSON.stringify(allImported)}).then(async result=>{
         ACTIVE_DATA=allImported;loadedDate=importedDate;
+        writeCache(allImported,importedDate);
+        // Confirma o que ficou REALMENTE guardado na folha (e refresca a cache local).
+        let aviso2='';
+        try{
+          const chk=await apiJsonp({action:'get'});
+          if(chk&&chk.hasData&&Array.isArray(chk.data)){
+            if(chk.data.length!==allImported.length){
+              aviso2=`\n\n⚠ ATENÇÃO: a folha tem ${chk.data.length} registos mas importaste ${allImported.length}. Os dados antigos não foram substituídos — confirma que a implementação do Apps Script foi atualizada (Implementar > Gerir implementações > Editar > Nova versão).`;
+            }
+            ACTIVE_DATA=chk.data;loadedDate=chk.date||importedDate;writeCache(chk.data,loadedDate);
+          }
+        }catch(e){}
         document.querySelector('.date').textContent='Dados partilhados — '+loadedDate;
         $('seller').value='';$('driver').value='';voltaSel=0;
         setMode('entregas');
         const aviso=!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
-        alert(`Excel guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}${aviso}`);
+        alert(`Excel guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}${aviso}${aviso2}`);
         ADMIN_PIN_FOR_SAVE='';
       }).catch(err=>{alert('Falha ao guardar no Google Sheets.\n\n'+(err&&err.message?err.message:err));ADMIN_PIN_FOR_SAVE='';});
     }catch(err){alert('Não foi possível importar o Excel.\n\n'+err.message);}
