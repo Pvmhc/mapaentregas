@@ -180,7 +180,7 @@ html.locked body{overflow:hidden}
 .em-busy{opacity:.55;pointer-events:none}
 </style>
 <style>
-.mode-tabs{display:flex;gap:8px;margin:12px 0 4px}.mode-tab{flex:1;border:1px solid var(--border,#cbd5e1);border-radius:12px;background:transparent;color:inherit;padding:12px 10px;font:inherit;font-weight:750;cursor:pointer}.mode-tab.selected{background:#176c47;color:white;border-color:#176c47}.mode-tab span{font-size:12px;opacity:.8}.retained-card .retained-badge{display:inline-block;background:#fff0e9;color:#a13e16;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:750}.retained-orders{display:grid;gap:8px;margin-top:12px}.retained-order{padding:10px 12px;border:1px solid var(--border,#d7dce2);border-radius:10px;font-size:13px;display:grid;gap:5px}.retained-order strong{font-size:14px}.retained-meta{display:flex;flex-wrap:wrap;gap:6px 14px;opacity:.85}.retained-summary{margin:6px 0 10px;font-size:13px;opacity:.8}.retained-card .seller{margin-top:10px}.placed{font-size:12.5px;color:var(--muted);margin-top:8px}.placed b{color:var(--text);font-weight:700}
+.mode-tabs{display:flex;gap:8px;margin:12px 0 4px}.mode-tab{flex:1;border:1px solid var(--border,#cbd5e1);border-radius:12px;background:transparent;color:inherit;padding:12px 10px;font:inherit;font-weight:750;cursor:pointer}.mode-tab.selected{background:#176c47;color:white;border-color:#176c47}.mode-tab span{font-size:12px;opacity:.8}.retained-card .retained-badge{display:inline-block;background:#fff0e9;color:#a13e16;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:750}.retained-orders{display:grid;gap:8px;margin-top:12px}.retained-order{padding:10px 12px;border:1px solid var(--border,#d7dce2);border-radius:10px;font-size:13px;display:grid;gap:5px}.retained-order strong{font-size:14px}.retained-meta{display:flex;flex-wrap:wrap;gap:6px 14px;opacity:.85}.retained-summary{margin:6px 0 10px;font-size:13px;opacity:.8}.retained-card .seller{margin-top:10px}
 </style></head>
 <body>
 <div id="lock" class="lock" role="dialog" aria-modal="true" aria-label="Entrar na app">
@@ -357,9 +357,6 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const phone=s=>String(s??'').replace(/[^\d+]/g,'');
 const unique=a=>[...new Set(a.filter(Boolean).map(String))].sort((x,y)=>x.localeCompare(y,'pt-PT'));
-// Vendedor "real" (dono da conta) usado nos filtros; 'vendedor' passa a ser quem colocou a encomenda.
-const sellerOf=x=>String(x.conta||x.vendedor||'').trim();
-const placedBy=x=>(x.vendedor&&x.conta&&String(x.vendedor).trim()!==String(x.conta).trim())?`<div class="placed">Encomenda colocada por: <b>${esc(x.vendedor)}</b></div>`:'';
 let voltaSel=0; // 0 = todas as voltas
 // Define a volta de cada transporte por motorista: o número mais pequeno é a 1.ª volta.
 function computeVolta(){
@@ -397,8 +394,8 @@ function fillFilters(){
   if(activeMode==='entregas')buildVoltaChips(vi);
   const data=ACTIVE_DATA.filter(x=>activeMode==='retidas'?isRetained(x):!isRetained(x));
   const okV=x=>activeMode==='retidas'||!voltaSel||voltaOf(x,vi)===voltaSel;
-  const sellers=unique(data.filter(x=>okV(x)&&(activeMode==='retidas'||!drv||x.motorista===drv)).map(sellerOf));
-  const drivers=unique(data.filter(x=>okV(x)&&(!sel||sellerOf(x)===sel)).map(x=>x.motorista));
+  const sellers=unique(data.filter(x=>okV(x)&&(activeMode==='retidas'||!drv||x.motorista===drv)).map(x=>x.vendedor));
+  const drivers=unique(data.filter(x=>okV(x)&&(!sel||x.vendedor===sel)).map(x=>x.motorista));
   const fill=(el,label,list,cur)=>{el.innerHTML='';const first=document.createElement('option');first.value='';first.textContent=label;el.appendChild(first);list.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)});el.value=list.includes(cur)?cur:'';};
   fill($('seller'),'Todos os vendedores',sellers,sel);
   if(activeMode==='retidas'){$('driver').hidden=true;$('driver').value='';}else{$('driver').hidden=false;fill($('driver'),'Todos os motoristas',drivers,drv);}
@@ -406,13 +403,13 @@ function fillFilters(){
 function setMode(mode){activeMode=mode;$('tabDeliveries').classList.toggle('selected',mode==='entregas');$('tabRetained').classList.toggle('selected',mode==='retidas');$('seller').value='';$('driver').value='';voltaSel=0;fillFilters();render();}
 function renderRetained(){
   const q=$('search').value.trim().toLowerCase(),seller=$('seller').value;
-  const rows=ACTIVE_DATA.filter(x=>isRetained(x)&&(!seller||sellerOf(x)===seller)&&(!q||[x.cliente,x.nome,x.cidade,x.vendedor,x.conta,x.id,x.referencia,x.motivo,x.bloqueio].join(' ').toLowerCase().includes(q)));
+  const rows=ACTIVE_DATA.filter(x=>isRetained(x)&&(!seller||x.vendedor===seller)&&(!q||[x.cliente,x.nome,x.cidade,x.vendedor,x.id,x.referencia,x.motivo,x.bloqueio].join(' ').toLowerCase().includes(q)));
   const groups=new Map();rows.forEach(x=>{const k=x.cliente||'sem-'+x.id;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x)});
   $('count').textContent=groups.size;$('empty').hidden=groups.size>0;
   const money=v=>{const n=Number(v);return v!==''&&v!=null&&Number.isFinite(n)?n.toLocaleString('pt-PT',{style:'currency',currency:'EUR'}):'—'};
   $('cards').innerHTML=[...groups.values()].sort((a,b)=>String(a[0].nome).localeCompare(String(b[0].nome),'pt-PT')).map(items=>{
     const x=items[0];const total=items.reduce((n,r)=>n+(Number(r.valor)||0),0);
-    return `<article class="card retained-card"><div class="c-head"><div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div><div class="seller">${avatarVendedor(sellerOf(x))}<span class="s-label">Vendedor:</span><span class="seller-name">${esc(sellerOf(x)||'Não identificado')}</span></div>${placedBy(x)}<div class="retained-summary"><span class="retained-badge">${items.length} encomenda${items.length===1?'':'s'} retida${items.length===1?'':'s'}</span> · Valor total: <b>${money(total)}</b></div><div class="retained-orders">${items.map(r=>`<div class="retained-order"><strong>Encomenda ${esc(r.id||'—')}</strong><div class="retained-meta"><span>Data: ${esc(r.data||'—')}</span><span>Valor: ${money(r.valor)}</span>${r.referencia?`<span>Ref.: ${esc(r.referencia)}</span>`:''}</div>${r.bloqueio?`<div>Bloqueio: <b>${esc(r.bloqueio)}</b></div>`:''}${r.motivo?`<div>Estado/recusa: <b>${esc(r.motivo)}</b></div>`:''}</div>`).join('')}</div></article>`;
+    return `<article class="card retained-card"><div class="c-head"><div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="city">${esc(x.cidade||'')}</div></div><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div><div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'Não identificado')}</span></div><div class="retained-summary"><span class="retained-badge">${items.length} encomenda${items.length===1?'':'s'} retida${items.length===1?'':'s'}</span> · Valor total: <b>${money(total)}</b></div><div class="retained-orders">${items.map(r=>`<div class="retained-order"><strong>Encomenda ${esc(r.id||'—')}</strong><div class="retained-meta"><span>Data: ${esc(r.data||'—')}</span><span>Valor: ${money(r.valor)}</span>${r.referencia?`<span>Ref.: ${esc(r.referencia)}</span>`:''}</div>${r.bloqueio?`<div>Bloqueio: <b>${esc(r.bloqueio)}</b></div>`:''}${r.motivo?`<div>Estado/recusa: <b>${esc(r.motivo)}</b></div>`:''}</div>`).join('')}</div></article>`;
   }).join('');
   if(typeof cfgRefresh==='function')cfgRefresh();
 }
@@ -500,8 +497,8 @@ function render(){
   const voltaInfo=computeVolta();
   const out=ACTIVE_DATA.filter(x=>{
     if(isRetained(x))return false;
-    const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x.conta,x.motorista,x.contacto,x.ordem,x.transporte,x.id].join(' ').toLowerCase();
-    return (!q||hay.includes(q))&&(!s||sellerOf(x)===s)&&(!d||x.motorista===d)&&(!voltaSel||voltaOf(x,voltaInfo)===voltaSel);
+    const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x.motorista,x.contacto,x.ordem,x.transporte,x.id].join(' ').toLowerCase();
+    return (!q||hay.includes(q))&&(!s||x.vendedor===s)&&(!d||x.motorista===d)&&(!voltaSel||voltaOf(x,voltaInfo)===voltaSel);
   });
   const uniqueClients=new Set(out.map(x=>String(x.cliente||'').trim()).filter(Boolean));
   $('count').textContent=uniqueClients.size;
@@ -527,7 +524,7 @@ function render(){
         <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
         <div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>
       </div>
-      <div class="seller">${avatarVendedor(sellerOf(x))}<span class="s-label">Vendedor:</span><span class="seller-name">${esc(sellerOf(x)||'—')}</span></div>${placedBy(x)}
+      <div class="seller">${avatarVendedor(x.vendedor)}<span class="s-label">Vendedor:</span><span class="seller-name">${esc(x.vendedor||'—')}</span></div>
       <div class="driver">
         <div class="d-col"><div class="label">Motorista</div><div class="d-name">${esc(x.motorista||'—')}</div></div>
         <div class="d-col"><div class="label">Entrega</div><div class="d-name${info?` t${Math.min(info.numero,3)}`:''}">${info?`${info.numero}ª volta`:'—'}</div></div>
@@ -593,10 +590,9 @@ function importExcel(file){
       if(baseName){XLSX.utils.sheet_to_json(wb.Sheets[baseName],{defval:'',raw:true}).forEach(r=>{const id=String(r['ID do Cliente SAP']??'').trim().replace(/\.0+$/,'');const seller=String(r['Proprietário da conta']??'').trim();if(id&&seller)baseMap.set(id,seller);});}
       const knownSellers=new Map();
       imported.forEach(r=>{if(r.cliente&&r.vendedor)knownSellers.set(r.cliente,r.vendedor)});
-      imported.forEach(r=>{r.conta=baseMap.get(String(r.cliente).replace(/\.0+$/,''))||'';});
       const retained=retSheetName?XLSX.utils.sheet_to_json(wb.Sheets[retSheetName],{defval:'',raw:true}).filter(r=>String(r['Cliente']??'').trim()).map(r=>{
         const cliente=String(r['Cliente']??'').trim().replace(/\.0+$/,'');const d=normalizeDate(r['Dta.criação']);
-        return {tipo:'retido',cliente,nome:String(r['Nome']??'').trim(),cidade:String(r['Cidade']??'').trim(),vendedor:String(r['Nome do vendedor']??'').trim()||knownSellers.get(cliente)||baseMap.get(cliente)||'',conta:baseMap.get(cliente)||'',id:String(r['Documento de vendas']??'').trim(),referencia:String(r['Referência cliente']??'').trim(),valor:r['Valor líquido']??'',data:d?formatDate(d):'',bloqueio:String(r['Bloqueio remessa']??'').trim(),motivo:String(r['Status de recusa']??r['Stat. aprovação']??'').trim()};
+        return {tipo:'retido',cliente,nome:String(r['Nome']??'').trim(),cidade:String(r['Cidade']??'').trim(),vendedor:String(r['Nome do vendedor']??'').trim()||knownSellers.get(cliente)||baseMap.get(cliente)||'',id:String(r['Documento de vendas']??'').trim(),referencia:String(r['Referência cliente']??'').trim(),valor:r['Valor líquido']??'',data:d?formatDate(d):'',bloqueio:String(r['Bloqueio remessa']??'').trim(),motivo:String(r['Status de recusa']??r['Stat. aprovação']??'').trim()};
       }):[];
       const allImported=imported.concat(retained);
       if(!ADMIN_PIN_FOR_SAVE) throw new Error('Introduza o PIN de administrador antes de importar.');
@@ -643,7 +639,7 @@ function cfgDraw(){[...cfgDots.children].forEach((d,i)=>d.classList.toggle('on',
 function cfgPinClose(){cfgPinBack.classList.remove('show');cfgVal='';cfgDraw();}
 function cfgRefresh(){
   if(!cfgPanel.classList.contains('show'))return;
-  const nomes=unique(ACTIVE_DATA.map(sellerOf));
+  const nomes=unique(ACTIVE_DATA.map(x=>x.vendedor));
   $('cfgList').innerHTML=nomes.length?nomes.map(n=>{
     const f=fotoVendedor(n);
     return `<div class="cfg-row"><span class="s-av" style="${f?'':'background:'+corNome(n)}">${f?`<img src="${esc(f)}" alt="">`:esc(iniciaisNome(n))}</span><span class="cfg-name">${esc(n)}</span><button type="button" class="cfg-up" data-nome="${esc(n)}">${f?'Mudar':'Carregar'}</button></div>`;
