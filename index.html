@@ -175,6 +175,8 @@ html.locked body{overflow:hidden}
 .em-add{display:flex;gap:8px;margin-top:10px}
 .em-add input{flex:1;min-width:0;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--btn);color:var(--text);padding:0 10px;font-size:16px}
 .cfg-box .cfg-sec .em-empty{margin:10px 0 0;text-align:center}
+.em-btn{border:1px solid var(--line);background:var(--btn);color:var(--text);border-radius:10px;height:38px;padding:0 14px;font-weight:800;font-size:13px;cursor:pointer;flex:0 0 auto}
+.em-btn:active{background:var(--btn-active)}
 .em-busy{opacity:.55;pointer-events:none}
 </style>
 </head>
@@ -256,7 +258,8 @@ html.locked body{overflow:hidden}
       <p>Recebem um email sempre que o mapa é atualizado.</p>
       <div id="emBody">
         <div id="emList" class="em-list"></div>
-        <div class="em-add"><input id="emInput" type="email" inputmode="email" autocomplete="off" autocapitalize="off" placeholder="nome@empresa.pt" aria-label="Novo email"><button id="emAdd" class="cfg-up" type="button">Adicionar</button></div>
+        <div class="em-add"><input id="emInput" type="email" inputmode="email" autocomplete="off" autocapitalize="off" placeholder="nome@empresa.pt" aria-label="Novo email"><button id="emAdd" class="em-btn" type="button">Adicionar</button></div>
+        <button id="emSend" class="em-btn" type="button" style="width:100%;margin-top:12px">✉ Enviar notificação agora</button>
       </div>
     </div>
     <button id="cfgClose" class="help-ok" type="button">Fechar</button>
@@ -664,12 +667,13 @@ function emRender(){
     :'<p class="em-empty">Ainda não há emails. Ninguém recebe notificações.</p>';
 }
 function emBusy(b){EM_BUSY=b;$('emSec').classList.toggle('em-busy',b);}
-function emErro(err){alert('Não foi possível atualizar os emails.\n\n'+(err&&err.message?err.message:err));}
-async function emOperacao(action,extra){
+function emErro(err,tit){alert((tit||'Não foi possível atualizar os emails.')+'\n\n'+(err&&err.message?err.message:err));}
+async function emPost(action,extra){
   const token='em_'+Date.now()+'_'+Math.random().toString(36).slice(2);
   const res=await postToApi({action,token,pin:CFG_PIN,...extra});
-  return (res&&res.result&&res.result.emails)||[];
+  return (res&&res.result)||{};
 }
+async function emOperacao(action,extra){return (await emPost(action,extra)).emails||[];}
 async function emCarregar(){
   emBusy(true);
   try{EM_LIST=await emOperacao('emails_get',{});EM_OK=true;emRender();}
@@ -690,6 +694,16 @@ $('emAdd').addEventListener('click',async()=>{
   if(!EM_RE.test(v)||v.length>120){showToast('Email inválido');return;}
   if(EM_LIST.some(x=>x.toLowerCase()===v)){showToast('Esse email já está na lista');return;}
   if(await emGuardar([...EM_LIST,v])){$('emInput').value='';showToast('Email adicionado');}
+});
+$('emSend').addEventListener('click',async()=>{
+  if(EM_BUSY)return;
+  if(!EM_OK){showToast('A lista ainda não carregou');return;}
+  if(!EM_LIST.length){showToast('Adicione primeiro pelo menos um email');return;}
+  if(!confirm('Enviar agora o email de atualização do mapa a '+EM_LIST.length+' pessoa(s)?'))return;
+  emBusy(true);
+  try{await emPost('emails_enviar',{});showToast('Notificação enviada');}
+  catch(err){emErro(err,'Não foi possível enviar a notificação.');}
+  emBusy(false);
 });
 $('emInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('emAdd').click();}});
 $('emList').addEventListener('click',async e=>{
