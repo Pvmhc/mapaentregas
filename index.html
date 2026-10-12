@@ -320,10 +320,12 @@ const SITE_NOMES={faro:'Faro',algoz:'Algoz'};
 // ===== Proprietários das contas (televenda -> proprietário real) =====
 const PROP_CACHE_KEY='orderstatus_prop_v1';
 let PROP=(()=>{try{return JSON.parse(localStorage.getItem(PROP_CACHE_KEY)||'{}')||{}}catch(e){return {}}})();
+// Nº de cliente sem zeros à esquerda: "0004028634" e "4028634" passam a ser o mesmo cliente.
+const normCli=c=>String(c==null?'':c).trim().replace(/\.0+$/,'').replace(/^0+(?=\d)/,'');
 function aplicarProp(arr){
   (arr||[]).forEach(x=>{
     if(x._vo===undefined)x._vo=x.vendedor;
-    const p=PROP[x.cliente];
+    const p=PROP[normCli(x.cliente)];
     x.vendedor=p||x._vo;
   });
   return arr;
@@ -338,7 +340,7 @@ async function carregarProp(){
   try{
     const res=await apiJsonp({action:'prop'});
     if(res&&res.map&&typeof res.map==='object'){
-      PROP=res.map;
+      PROP={};Object.keys(res.map).forEach(k=>{PROP[normCli(k)]=res.map[k];});
       try{localStorage.setItem(PROP_CACHE_KEY,JSON.stringify(PROP));}catch(e){}
       aplicarProp(ACTIVE_DATA);fillFilters();render();propInfoAtualiza();cfgRefresh();
       return true;
@@ -653,7 +655,7 @@ function importExcel(file){
       const retSheetName=wb.SheetNames.find(n=>n.trim().toUpperCase()==='RETIDOS');
       const baseName=wb.SheetNames.find(n=>n.trim().toUpperCase()==='BASE DE VENDAS');
       const baseMap=new Map();
-      if(baseName){XLSX.utils.sheet_to_json(wb.Sheets[baseName],{defval:'',raw:true}).forEach(r=>{const id=String(r['ID do Cliente SAP']??'').trim().replace(/\.0+$/,'');const seller=String(r['Proprietário da conta']??'').trim();if(id&&seller)baseMap.set(id,seller);});}
+      if(baseName){XLSX.utils.sheet_to_json(wb.Sheets[baseName],{defval:'',raw:true}).forEach(r=>{const id=String(r['ID do Cliente SAP']??'').trim().replace(/\.0+$/,'').replace(/^0+(?=\d)/,'');const seller=String(r['Proprietário da conta']??'').trim();if(id&&seller)baseMap.set(id,seller);});}
       const knownSellers=new Map();
       imported.forEach(r=>{if(r.cliente&&r.vendedor)knownSellers.set(r.cliente,r.vendedor)});
       
@@ -920,7 +922,8 @@ function importarProprietarios(file){
       if(!rows.length)throw new Error('O ficheiro não tem dados.');
       const norm=k=>String(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
       const headers=Object.keys(rows[0]);
-      let kc=headers.find(h=>/^(idclientesap|idcliente|cliente|ncliente|nrcliente|numerocliente|numcliente|codcliente|codigocliente)$/.test(norm(h)))
+      let kc=headers.find(h=>norm(h).includes('sap')&&norm(h).includes('cliente'))
+          ||headers.find(h=>/^(idclientesap|idcliente|cliente|ncliente|nrcliente|numerocliente|numcliente|codcliente|codigocliente)$/.test(norm(h)))
           ||headers.find(h=>norm(h).includes('cliente')&&!norm(h).includes('nome'));
       let ko=headers.find(h=>h!==kc&&/propriet|vendedor|gestor|owner/.test(norm(h)));
       if(!kc||!ko){
@@ -930,7 +933,7 @@ function importarProprietarios(file){
       }
       const mapa=new Map();
       rows.forEach(r=>{
-        const c=String(r[kc]??'').trim().replace(/\.0+$/,'');
+        const c=normCli(r[kc]);
         const n=String(r[ko]??'').trim();
         if(c&&n)mapa.set(c,n);
       });
