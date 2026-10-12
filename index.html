@@ -180,7 +180,17 @@ html.locked body{overflow:hidden}
 </style>
 <style>
 .mode-tabs{display:flex;gap:8px;margin:12px 0 4px}.mode-tab{flex:1;border:1px solid var(--border,#cbd5e1);border-radius:12px;background:transparent;color:inherit;padding:12px 10px;font:inherit;font-weight:750;cursor:pointer}.mode-tab.selected{background:#176c47;color:white;border-color:#176c47}.mode-tab span{font-size:12px;opacity:.8}.retained-card .retained-badge{display:inline-block;background:#fff0e9;color:#a13e16;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:750}.retained-orders{display:grid;gap:8px;margin-top:12px}.retained-order{padding:10px 12px;border:1px solid var(--border,#d7dce2);border-radius:10px;font-size:13px;display:grid;gap:5px}.retained-order strong{font-size:14px}.retained-meta{display:flex;flex-wrap:wrap;gap:6px 14px;opacity:.85}.retained-summary{margin:6px 0 10px;font-size:13px;opacity:.8}.retained-card .seller{margin-top:10px}
-</style></head>
+
+.sitepick{position:fixed;inset:0;z-index:290;background:var(--bg);display:none;align-items:center;justify-content:center;padding:20px;text-align:center}
+html.nosite .sitepick{display:flex}
+html.nosite body{overflow:hidden}
+.sitepick h2{margin:0 0 6px;font-size:22px}
+.sitepick p{margin:0 0 20px;color:var(--muted);font-size:14px}
+.site-btns{display:flex;flex-direction:column;gap:12px;width:min(290px,80vw);margin:0 auto}
+.site-btns button{height:64px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:20px;font-weight:800;cursor:pointer;box-shadow:0 1px 3px rgba(15,23,42,.08);-webkit-tap-highlight-color:transparent}
+.site-btns button:active{transform:scale(.98)}
+.site-chip{margin-left:6px;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:12px;font-weight:800;cursor:pointer;vertical-align:middle}
+</style><script>try{if(!sessionStorage.getItem('orderStatusSite'))document.documentElement.classList.add('nosite');}catch(e){document.documentElement.classList.add('nosite');}</script></head>
 <body>
 <div id="lock" class="lock" role="dialog" aria-modal="true" aria-label="Entrar na app">
   <div class="pin-box">
@@ -195,10 +205,16 @@ html.locked body{overflow:hidden}
     </div>
   </div>
 </div>
+<div id="sitePick" class="sitepick" role="dialog" aria-modal="true" aria-label="Escolher site">
+  <div>
+    <h2>Order Status Dia</h2><p>Escolhe o site</p>
+    <div class="site-btns"><button type="button" data-site="faro">Faro</button><button type="button" data-site="algoz">Algoz</button></div>
+  </div>
+</div>
 <div class="app">
 <header class="top">
   <div class="title">
-    <div><h1>ORDER.STATUS.DIA</h1><div class="date">Acesso rápido — 08/10/2026</div></div>
+    <div><h1>ORDER.STATUS.DIA <button id="siteChip" type="button" class="site-chip" title="Mudar de site"></button></h1><div class="date">Acesso rápido — 08/10/2026</div></div>
     <div class="tools">
       <div class="count" id="count">0</div>
       <button id="themeBtn" type="button" class="icon-btn" aria-label="Alternar modo claro/escuro" title="Modo claro/escuro">
@@ -283,6 +299,8 @@ html.locked body{overflow:hidden}
 // Ligação ao Google Apps Script. O HTML pode estar alojado fora do Google.
 const API_URL='https://script.google.com/macros/s/AKfycbye4o-a5gl067XL0SzzoUOdpYqGJhd737Q27ZlCgdMWw9y8jsXzkpJgn7TvwsAms3Y/exec';
 let ADMIN_PIN_FOR_SAVE='';
+let SITE=(()=>{try{const x=sessionStorage.getItem('orderStatusSite');return x==='algoz'||x==='faro'?x:'';}catch(e){return '';}})();
+const SITE_NOMES={faro:'Faro',algoz:'Algoz'};
 function apiJsonp(params={}){
   return new Promise((resolve,reject)=>{
     const cb='__orderStatusCb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
@@ -291,12 +309,13 @@ function apiJsonp(params={}){
     function cleanup(){clearTimeout(timeout);delete window[cb];script.remove();}
     window[cb]=data=>{cleanup();resolve(data);};
     script.onerror=()=>{cleanup();reject(new Error('Não foi possível contactar o Google Apps Script.'));};
-    const q=new URLSearchParams({...params,callback:cb,_:String(Date.now())});
+    const q=new URLSearchParams({site:SITE,...params,callback:cb,_:String(Date.now())});
     script.src=API_URL+'?'+q.toString();
     document.head.appendChild(script);
   });
 }
 function postToApi(fields){
+  fields={site:SITE,...fields};
   return new Promise((resolve,reject)=>{
     const token=fields.token;
     let frame=document.getElementById('orderStatusPostFrame');
@@ -313,10 +332,11 @@ function postToApi(fields){
     setTimeout(check,900);
   });
 }
-const CACHE_KEY='orderStatusCache';
+let CACHE_KEY='orderStatusCache_'+(SITE||'faro');
 function readCache(){try{const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return c&&Array.isArray(c.data)&&c.data.length?c:null;}catch(e){return null;}}
 function writeCache(data,date){try{localStorage.setItem(CACHE_KEY,JSON.stringify({data:data,date:date,ts:Date.now()}));}catch(e){}}
 async function loadSharedData(){
+  const siteReq=SITE;
   carregarFotosNuvem();
   const dateEl=document.querySelector('.date');
   const cached=readCache();
@@ -324,6 +344,7 @@ async function loadSharedData(){
   for(let i=0;i<3;i++){
     try{
       const res=await apiJsonp({action:'get'});
+      if(siteReq!==SITE)return;
       if(res&&res.error)throw new Error(res.error);
       if(res&&res.hasData&&Array.isArray(res.data)){
         ACTIVE_DATA=res.data;loadedDate=res.date||'';writeCache(res.data,loadedDate);
@@ -615,6 +636,8 @@ function importExcel(file){
 
       const allImported=imported.concat(retained);
       if(!ADMIN_PIN_FOR_SAVE) throw new Error('Introduza o PIN de administrador antes de importar.');
+      if(!SITE)throw new Error('Escolhe primeiro o site (Faro ou Algoz).');
+      if(!confirm('Vais importar este Excel para o site de '+SITE_NOMES[SITE]+'.\n\nOs dados atuais de '+SITE_NOMES[SITE]+' serão substituídos. O outro site não é alterado.\n\nContinuar?')){ADMIN_PIN_FOR_SAVE='';$('excelInput').value='';return;}
       const token='save_'+Date.now()+'_'+Math.random().toString(36).slice(2);
       postToApi({action:'save',token,pin:ADMIN_PIN_FOR_SAVE,date:importedDate,data:JSON.stringify(allImported)}).then(async result=>{
         ACTIVE_DATA=allImported;loadedDate=importedDate;
@@ -634,7 +657,7 @@ function importExcel(file){
         $('seller').value='';$('driver').value='';voltaSel=0;
         setMode('entregas');
         const aviso=!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
-        alert(`Excel guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}${aviso}${aviso2}`);
+        alert(`Excel de ${SITE_NOMES[SITE]} guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}${aviso}${aviso2}`);
         ADMIN_PIN_FOR_SAVE='';
       }).catch(err=>{alert('Falha ao guardar no Google Sheets.\n\n'+(err&&err.message?err.message:err));ADMIN_PIN_FOR_SAVE='';});
     }catch(err){alert('Não foi possível importar o Excel.\n\n'+err.message);}
@@ -840,7 +863,27 @@ try{
   mq.addEventListener('change',e=>{let saved=null;try{saved=localStorage.getItem('orderStatusTheme')}catch(_){}if(!saved)setTheme(e.matches?'dark':'light',false);});
 }catch(e){}
 document.querySelector('.date').addEventListener('click',()=>{if(/Toque aqui/.test(document.querySelector('.date').textContent))loadSharedData();});
-loadSharedData();
+function aplicarSite(){
+  CACHE_KEY='orderStatusCache_'+(SITE||'faro');
+  const c=$('siteChip');if(c)c.textContent=(SITE_NOMES[SITE]||'')+' ⇄';
+}
+function selectSite(x){
+  SITE=x;try{sessionStorage.setItem('orderStatusSite',x);}catch(e){}
+  document.documentElement.classList.remove('nosite');
+  aplicarSite();
+  ACTIVE_DATA=[];loadedDate='';
+  $('seller').value='';$('driver').value='';$('search').value='';voltaSel=0;
+  setMode('entregas');
+  loadSharedData();
+}
+function trocarSite(){
+  try{sessionStorage.removeItem('orderStatusSite');}catch(e){}
+  SITE='';document.documentElement.classList.add('nosite');
+}
+$('sitePick').addEventListener('click',e=>{const b=e.target.closest('[data-site]');if(b)selectSite(b.dataset.site);});
+$('siteChip').addEventListener('click',trocarSite);
+aplicarSite();
+if(SITE)loadSharedData();
 </script>
 <script>
 // PWA: registo do Service Worker + instalação
