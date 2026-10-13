@@ -152,6 +152,7 @@ html[data-theme=dark] .card{--cbg:var(--card);--cbox:#141d33;--clabel:var(--mute
 .c-side{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .multi{font-size:11.5px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:999px;padding:3px 10px;white-space:nowrap}
 html[data-theme=dark] .multi{color:#fcd34d;background:rgba(245,158,11,.18)}
+.multi-ph{display:none}
 .refs div+div{border-left:0}
 .refs div{gap:3px}
 .refs .label{font-size:10px;font-weight:400;letter-spacing:.04em;color:var(--clabel)}
@@ -267,6 +268,11 @@ html.nosite body{overflow:hidden}
   .top .search,.top .filters{margin-top:10px}
   .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;align-items:start;padding:18px 28px}
   .card{margin:0}
+  /* PC: todos os cartões com o mesmo tamanho (mesmo sem a etiqueta "2 encomendas") */
+  .cards{grid-auto-rows:1fr;align-items:stretch}
+  .card{display:flex;flex-direction:column;height:100%;box-sizing:border-box}
+  .refs-all{margin-top:auto}
+  .multi-ph{display:block;visibility:hidden}
   .bottom-bar{padding-left:28px;padding-right:28px}
   .bottom-bar .in{max-width:none;display:flex;gap:16px;align-items:center}
   .bottom-bar .mode-tabs{flex:1 1 0}
@@ -694,7 +700,7 @@ function render(){
     return `<article class="card">
       <div class="c-head">
         <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
-        <div class="c-side"><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>${g.length>1?`<span class="multi">${g.length} encomendas</span>`:''}</div>
+        <div class="c-side"><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>${g.length>1?`<span class="multi">${g.length} encomendas</span>`:'<span class="multi multi-ph" aria-hidden="true">1 encomenda</span>'}</div>
       </div>
       <div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor</span><span class="seller-name">${esc(x.vendedor||'—')}</span></span>${por?`<span class="seller-by">Colocada por ${esc(por)}</span>`:''}</span></div>
       <div class="ops">
@@ -704,7 +710,7 @@ function render(){
         </div>
         ${p?`<a class="call" href="tel:${esc(p)}" aria-label="Ligar ${esc(fmtTel)}">${ICO_TEL}<span>${esc(fmtTel)}</span></a>`:`<div class="call off">${ICO_TEL}<span>Sem contacto</span></div>`}
       </div>
-      ${g.map(refsHtml).join('')}
+      <div class="refs-all">${g.map(refsHtml).join('')}</div>
     </article>`;
   }).join('');
   if(typeof cfgRefresh==='function')cfgRefresh();
@@ -718,11 +724,54 @@ function normalizeDate(v){
   const d=new Date(s); return isNaN(d)?null:new Date(d.getFullYear(),d.getMonth(),d.getDate());
 }
 function formatDate(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
+// Importação independente de Algoz: cruzamento das duas abas por motorista.
+const algozNome=n=>String(n??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+const algozNum=v=>String(v??'').trim().replace(/\.0+$/,'');
+function lerAlgoz(wb){
+  const achar=nome=>wb.SheetNames.find(n=>algozNome(n)===algozNome(nome));
+  const detalhe=achar('Visão detalhada'),dia=achar('Visão do dia');
+  if(!detalhe||!dia)throw new Error('Algoz exige as abas «Visão detalhada» e «Visão do dia» no mesmo Excel.');
+  const d=XLSX.utils.sheet_to_json(wb.Sheets[detalhe],{header:1,defval:'',raw:false});
+  const v=XLSX.utils.sheet_to_json(wb.Sheets[dia],{header:1,defval:'',raw:false});
+  const motoristas=new Map(),ordens=new Map(),telefones=new Map();
+  v.forEach((r,i)=>{
+    const nome=algozNome(r[3]),num=algozNum(r[1]),tel=String(r[4]??'').replace(/\D/g,'').replace(/^351(?=\d{9}$)/,'');
+    if(!nome||!num||!/^\d+$/.test(num))return;
+    if(!motoristas.has(nome))motoristas.set(nome,new Set());
+    motoristas.get(nome).add(num);
+    if(tel){if(!telefones.has(nome))telefones.set(nome,new Set());telefones.get(nome).add(tel);}
+  });
+  motoristas.forEach((set,nome)=>{
+    const nums=[...set].sort((a,b)=>{const x=BigInt(a),y=BigInt(b);return x<y?-1:x>y?1:0;});
+    ordens.set(nome,nums);
+  });
+  const conflitos=[...telefones].filter(([n,set])=>set.size>1).map(([n])=>n);
+  if(conflitos.length)throw new Error('Há contactos diferentes para o mesmo motorista na Visão do dia: '+conflitos.join(', ')+'. Corrige o Excel antes de importar.');
+  const linhas=d.map((r,i)=>({r,i})).filter(({r})=>algozNome(r[4])&&String(r[7]??'').trim()&&motoristas.has(algozNome(r[4])));
+  if(!linhas.length)throw new Error('Não encontrei entregas com motorista e estabelecimento correspondentes nas duas abas.');
+  const avisos=[];
+  const imported=linhas.map(({r,i})=>{
+    const motorista=String(r[4]??'').trim(),chave=algozNome(motorista),nums=ordens.get(chave)||[];
+    // Procura o identificador de encomenda nas restantes colunas da linha detalhada.
+    const matches=[...new Set(r.map((c,j)=>[algozNum(c),j]).filter(([n,j])=>j!==1&&j!==4&&j!==7&&j!==9&&nums.includes(n)).map(([n])=>n))];
+    let num='';
+    if(matches.length===1)num=matches[0];
+    else if(nums.length===1)num=nums[0];
+    else avisos.push('Linha '+(i+1)+' — '+motorista+' ('+(matches.length>1?'vários números coincidentes':'sem número de encomenda comum')+')');
+    return {cliente:'ALG-'+algozNome(r[7])+'-'+algozNome(r[9]),nome:String(r[7]??'').trim(),cidade:String(r[9]??'').trim(),vendedor:String(r[1]??'').trim(),motorista,contacto:[...(telefones.get(chave)||[])][0]||'',status:'',ordem:'',transporte:num,id:num};
+  });
+  if(avisos.length)throw new Error('Não é possível identificar a volta de algumas entregas com segurança. A Visão detalhada precisa de uma coluna com o mesmo número de encomenda da coluna B da Visão do dia. Exemplos:\n'+avisos.slice(0,8).join('\n')+'\nNenhum dado foi substituído.');
+  return {imported,importedDate:new Date().toLocaleDateString('pt-PT'),retained:[],retSheetName:null,transpKey:'N.º encomenda (Visão do dia)',headers:['Visão detalhada','Visão do dia'],comTransp:imported.length};
+}
 function importExcel(file){
   const reader=new FileReader();
   reader.onload=e=>{
     try{
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+      let imported,importedDate,retained,retSheetName,transpKey,headers,comTransp;
+      if(SITE==='algoz'){
+        ({imported,importedDate,retained,retSheetName,transpKey,headers,comTransp}=lerAlgoz(wb));
+      }else{
       const sheetName=wb.SheetNames.find(n=>n.trim().toUpperCase()==='ORDER.STATUS.DIA');
       if(!sheetName) throw new Error('A aba "ORDER.STATUS.DIA" não foi encontrada.');
       const ws=wb.Sheets[sheetName];
@@ -784,6 +833,7 @@ function importExcel(file){
         };
       }) : [];
 
+      }
       const allImported=imported.concat(retained);
       if(!ADMIN_PIN_FOR_SAVE) throw new Error('Introduza o PIN de administrador antes de importar.');
       if(!SITE)throw new Error('Escolhe primeiro o site (Faro ou Algoz).');
@@ -806,7 +856,7 @@ function importExcel(file){
         document.querySelector('.date').textContent='Dados partilhados — '+loadedDate;
         $('seller').value='';$('driver').value='';voltaSel=0;
         setMode('entregas');
-        const aviso=!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
+        const aviso=SITE==='algoz'?'\nVoltas calculadas por número de encomenda: '+comTransp:!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
         alert(`Excel de ${SITE_NOMES[SITE]} guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}${aviso}${aviso2}`);
         ADMIN_PIN_FOR_SAVE='';
       }).catch(err=>{alert('Falha ao guardar no Google Sheets.\n\n'+(err&&err.message?err.message:err));ADMIN_PIN_FOR_SAVE='';});
