@@ -742,7 +742,8 @@ function importAlgoz(wb){
     // Visão do dia: B = nº de entrega, D = motorista, E = contacto (sem o 351)
     const drivers=new Map();
     dia.forEach(r=>{
-      const m=limpaMot(r[3]),t=txt(r[1]).replace(/\.0+$/,'');
+      // Se a coluna D só tiver o código do motorista, usa-o como identificação (a ligação faz-se pelo código)
+      const m=limpaMot(r[3])||txt(r[3]),t=txt(r[1]).replace(/\.0+$/,'');
       if(!m||!t||!/\d/.test(t))return;
       const k=_nk(m);let d=drivers.get(k);
       if(!d){d={nome:m,contacto:'',codigo:codMot(r[3]),transportes:new Set()};drivers.set(k,d);}
