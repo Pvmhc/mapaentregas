@@ -259,6 +259,20 @@ html.nosite body{overflow:hidden}
 .bottom-bar .voltas:empty{display:none}
 .bottom-bar .chip{height:34px}
 .site-chip{margin-left:0;flex:0 0 auto;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:12px;font-weight:800;cursor:pointer;vertical-align:middle}
+/* ===== Versão PC (>=1024px): a app ocupa o ecrã todo ===== */
+@media(min-width:1024px){
+  .app{max-width:none;width:100%}
+  .top{display:grid;grid-template-columns:1fr minmax(300px,460px);column-gap:20px;align-items:center;padding:12px 28px 12px}
+  .top .title{grid-column:1/-1}
+  .top .search,.top .filters{margin-top:10px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;align-items:start;padding:18px 28px}
+  .card{margin:0}
+  .bottom-bar{padding-left:28px;padding-right:28px}
+  .bottom-bar .in{max-width:none;display:flex;gap:16px;align-items:center}
+  .bottom-bar .mode-tabs{flex:1 1 0}
+  .bottom-bar .voltas{flex:1 1 0;margin-top:0}
+  .empty{padding:40px 28px}
+}
 </style><script>try{if(!sessionStorage.getItem('orderStatusSite'))document.documentElement.classList.add('nosite');}catch(e){document.documentElement.classList.add('nosite');}</script></head>
 <body>
 <div id="lock" class="lock" role="dialog" aria-modal="true" aria-label="Entrar na app">
