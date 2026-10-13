@@ -732,13 +732,14 @@ function lerAlgoz(wb){
   const detalhe=achar('Visão detalhada'),dia=achar('Visão do dia');
   if(!detalhe||!dia)throw new Error('Algoz exige as abas «Visão detalhada» e «Visão do dia» no mesmo Excel.');
 
-  const d=XLSX.utils.sheet_to_json(wb.Sheets[detalhe],{header:1,defval:'',raw:false});
-  const v=XLSX.utils.sheet_to_json(wb.Sheets[dia],{header:1,defval:'',raw:false});
+  const d=XLSX.utils.sheet_to_json(wb.Sheets[detalhe],{header:1,defval:'',raw:true});
+  const v=XLSX.utils.sheet_to_json(wb.Sheets[dia],{header:1,defval:'',raw:true});
 
-  // Importa apenas o dia mais recente presente na folha «Visão do Dia».
-  const datasDia=v.slice(4).map(r=>normalizeDate(r[2])).filter(Boolean);
-  if(!datasDia.length)throw new Error('Não encontrei datas válidas na coluna C da folha «Visão do Dia».');
-  const latest=new Date(Math.max(...datasDia.map(x=>x.getTime())));
+  // A data que determina a importação está na coluna F da folha «Visão Detalhada».
+  // Usa a data mais recente dessa coluna e cruza as rotas da «Visão do Dia» para o mesmo dia.
+  const datasDetalhe=d.slice(3).map(r=>normalizeDate(r[5])).filter(Boolean);
+  if(!datasDetalhe.length)throw new Error('Não encontrei datas válidas na coluna F da folha «Visão Detalhada».');
+  const latest=new Date(Math.max(...datasDetalhe.map(x=>x.getTime())));
   const mesmoDia=x=>{const dt=normalizeDate(x);return !!dt&&dt.getTime()===latest.getTime();};
 
   const motoristas=new Map(),telefones=new Map(),rotas=new Set();
