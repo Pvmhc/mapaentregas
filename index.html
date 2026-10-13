@@ -653,7 +653,7 @@ function guardarFotoVendedor(nome,file){
   window.escolherFotoVendedor=nome=>{alvo=nome;inp.click();};
 })();
 function render(){
-  $('deliveryTotal').textContent='('+new Set(ACTIVE_DATA.filter(x=>!isRetained(x)).map(x=>x.cliente)).size+')';
+  $('deliveryTotal').textContent='('+new Set(ACTIVE_DATA.filter(x=>!isRetained(x)).map(x=>String(x.cliente||x.nome||'').trim())).size+')';
   $('retainedTotal').textContent='('+new Set(ACTIVE_DATA.filter(isRetained).map(x=>x.cliente)).size+')';
   if(activeMode==='retidas'){renderRetained();return;}
   const q=$('search').value.trim().toLowerCase(), s=$('seller').value, d=$('driver').value;
@@ -663,7 +663,7 @@ function render(){
     const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x._vo,x.motorista,x.contacto,x.ordem,x.transporte,x.id].join(' ').toLowerCase();
     return (!q||hay.includes(q))&&(!s||x.vendedor===s)&&(!d||x.motorista===d)&&(!voltaSel||voltaOf(x,voltaInfo)===voltaSel);
   });
-  const uniqueClients=new Set(out.map(x=>String(x.cliente||'').trim()).filter(Boolean));
+  const uniqueClients=new Set(out.map(x=>String(x.cliente||x.nome||'').trim()).filter(Boolean));
   $('count').textContent=uniqueClients.size;
   $('empty').hidden=out.length!==0;
 
@@ -683,7 +683,7 @@ function render(){
   const grupos=[],mapaG=new Map();
   out.forEach(o=>{
     const inf=voltaInfo.get(String(o.motorista||'').trim()+'|'+String(o.transporte||'').trim());
-    const k=[String(o.cliente||'').trim(),String(o.vendedor||'').trim(),String(o.motorista||'').trim(),inf?inf.numero:''].join('|');
+    const k=[String(o.cliente||o.nome||'').trim(),String(o.vendedor||'').trim(),String(o.motorista||'').trim(),inf?inf.numero:''].join('|');
     let g=mapaG.get(k);if(!g){g=[];mapaG.set(k,g);grupos.push(g);}g.push(o);
   });
   const refsHtml=o=>`<div class="refs">
@@ -724,83 +724,92 @@ function normalizeDate(v){
   const d=new Date(s); return isNaN(d)?null:new Date(d.getFullYear(),d.getMonth(),d.getDate());
 }
 function formatDate(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
-// Importação independente de Algoz: cruzamento das duas abas por motorista.
-const algozNome=n=>String(n??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-const algozNum=v=>String(v??'').trim().replace(/\.0+$/,'');
-function lerAlgoz(wb){
-  const achar=nome=>wb.SheetNames.find(n=>algozNome(n)===algozNome(nome));
-  const detalhe=achar('Visão detalhada'),dia=achar('Visão do dia');
-  if(!detalhe||!dia)throw new Error('Algoz exige as abas «Visão detalhada» e «Visão do dia» no mesmo Excel.');
-
-  const d=XLSX.utils.sheet_to_json(wb.Sheets[detalhe],{header:1,defval:'',raw:true});
-  const v=XLSX.utils.sheet_to_json(wb.Sheets[dia],{header:1,defval:'',raw:true});
-
-  // A data que determina a importação está na coluna F da folha «Visão Detalhada».
-  // Usa a data mais recente dessa coluna e cruza as rotas da «Visão do Dia» para o mesmo dia.
-  const datasDetalhe=d.slice(3).map(r=>normalizeDate(r[5])).filter(Boolean);
-  if(!datasDetalhe.length)throw new Error('Não encontrei datas válidas na coluna F da folha «Visão Detalhada».');
-  const latest=new Date(Math.max(...datasDetalhe.map(x=>x.getTime())));
-  const mesmoDia=x=>{const dt=normalizeDate(x);return !!dt&&dt.getTime()===latest.getTime();};
-
-  const motoristas=new Map(),telefones=new Map(),rotas=new Set();
-  v.slice(4).filter(r=>mesmoDia(r[2])).forEach(r=>{
-    const nome=algozNome(r[3]),num=algozNum(r[1]);
-    const tel=String(r[4]??'').replace(/\D/g,'').replace(/^351(?=\d{9}$)/,'');
-    if(!nome||!num||!/^\d+$/.test(num))return;
-    rotas.add(num);
-    motoristas.set(nome,(motoristas.get(nome)||0)+1);
-    if(tel){
-      if(!telefones.has(nome))telefones.set(nome,new Set());
-      telefones.get(nome).add(tel);
-    }
-  });
-  const conflitos=[...telefones].filter(([n,set])=>set.size>1).map(([n])=>n);
-  if(conflitos.length)throw new Error('Há contactos diferentes para o mesmo motorista na Visão do Dia de '+formatDate(latest)+': '+conflitos.join(', ')+'. Corrige o Excel antes de importar.');
-
-  const linhas=d.slice(3).map((r,i)=>({r,i:i+3})).filter(({r})=>
-    mesmoDia(r[5]) &&
-    algozNome(r[4]) &&
-    String(r[7]??'').trim() &&
-    String(r[8]??'').trim() &&
-    rotas.has(algozNum(r[3]))
-  );
-  if(!linhas.length)throw new Error('Não encontrei entregas de '+formatDate(latest)+' com «Mapa Entrega» correspondente à coluna «Número» da folha «Visão do Dia».');
-
-  const imported=linhas.map(({r})=>{
-    const motorista=String(r[4]??'').trim(),chave=algozNome(motorista);
-    const rota=algozNum(r[3]);
-    return {
-      cliente:algozNum(r[7]),
-      nome:String(r[8]??'').trim(),
-      cidade:String(r[9]??'').trim(),
-      vendedor:String(r[1]??'').trim(),
-      motorista,
-      contacto:[...(telefones.get(chave)||[])][0]||'',
-      status:String(r[13]??'').trim(),
-      ordem:'',
-      transporte:rota,
-      id:String(r[6]??'').trim()
+// ===== Importação de ALGOZ: 2 abas ("Visão detalhada" + "Visão do dia") =====
+const _nk=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function importAlgoz(wb){
+  try{
+    const find=n=>wb.SheetNames.find(s=>_nk(s)===n);
+    const nDet=find('visaodetalhada'),nDia=find('visaododia');
+    if(!nDet)throw new Error('A aba "Visão detalhada" não foi encontrada.');
+    if(!nDia)throw new Error('A aba "Visão do dia" não foi encontrada.');
+    const rd=n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:true});
+    const det=rd(nDet),dia=rd(nDia);
+    const txt=v=>String(v??'').trim();
+    // Visão do dia: B = nº de entrega, D = motorista, E = contacto (sem o 351)
+    const drivers=new Map();
+    dia.forEach(r=>{
+      const m=txt(r[3]),t=txt(r[1]).replace(/\.0+$/,'');
+      if(!m||!t||!/\d/.test(t))return;
+      const k=_nk(m);let d=drivers.get(k);
+      if(!d){d={nome:m,contacto:'',transportes:new Set()};drivers.set(k,d);}
+      d.transportes.add(t);
+      let c=String(r[4]??'').replace(/\D/g,'');
+      if(c.startsWith('351')&&c.length>9)c=c.slice(3);else if(c.length>9)c=c.slice(-9);
+      if(c&&!d.contacto)d.contacto=c;
+    });
+    if(!drivers.size)throw new Error('Não encontrei motoristas/entregas na aba "Visão do dia" (colunas B e D).');
+    const menor=d=>[...d.transportes].sort((a,b)=>{const x=parseFloat(a),y=parseFloat(b);return Number.isFinite(x)&&Number.isFinite(y)?x-y:String(a).localeCompare(String(b))})[0];
+    const achaDriver=m=>{
+      const k=_nk(m);if(drivers.has(k))return drivers.get(k);
+      const tok=_nk(String(m).split(/\s+/)[0]);
+      const c=[...drivers.entries()].filter(([kk])=>kk.startsWith(tok));
+      return c.length===1?c[0][1]:null;
     };
-  });
-  return {
-    imported,
-    importedDate:formatDate(latest),
-    retained:[],
-    retSheetName:null,
-    transpKey:'Mapa Entrega (Visão detalhada)',
-    headers:['Visão detalhada','Visão do dia'],
-    comTransp:imported.filter(x=>x.transporte).length
-  };
+    // Coluna de transporte opcional na visão detalhada (cabeçalho com "transp")
+    const hdr=det[0]||[];
+    const colT=hdr.findIndex(h=>_nk(h).includes('transp'));
+    // Visão detalhada: B proprietário, E motorista, F dia de entrega, H estabelecimento, J localidade
+    let rows=det.map((r,i)=>({r,i,d:normalizeDate(r[5])})).filter(o=>txt(o.r[7])&&txt(o.r[4])&&!(o.i===0&&!o.d));
+    const datas=rows.filter(o=>o.d);
+    let latest=null;
+    if(datas.length){
+      latest=new Date(Math.max(...datas.map(o=>o.d.getTime())));
+      const iso=latest.toISOString().slice(0,10);
+      rows=rows.filter(o=>o.d&&o.d.toISOString().slice(0,10)===iso);
+    }
+    if(!rows.length)throw new Error('Não encontrei entregas na aba "Visão detalhada".');
+    let semDriver=new Set(),multiSemCol=new Set();
+    const imported=rows.map(({r})=>{
+      const mot=txt(r[4]);const d=achaDriver(mot);
+      let transporte='';
+      if(d){
+        if(colT>=0&&txt(r[colT]))transporte=txt(r[colT]).replace(/\.0+$/,'');
+        else{transporte=menor(d);if(d.transportes.size>1)multiSemCol.add(d.nome);}
+      }else semDriver.add(mot);
+      return{cliente:'',nome:txt(r[7]),cidade:txt(r[9]),vendedor:txt(r[1]),motorista:mot,contacto:d?d.contacto:'',status:'',ordem:'',transporte,id:''};
+    });
+    const importedDate=latest?formatDate(latest):formatDate(new Date());
+    if(!ADMIN_PIN_FOR_SAVE)throw new Error('Introduza o PIN de administrador antes de importar.');
+    if(SITE!=='algoz')throw new Error('Escolhe primeiro o site Algoz.');
+    if(!confirm('Vais importar este Excel para o site de Algoz.\n\nOs dados atuais de Algoz serão substituídos. O outro site não é alterado.\n\n'+imported.length+' entregas, data '+importedDate+'.\n\nContinuar?')){ADMIN_PIN_FOR_SAVE='';$('excelInput').value='';return;}
+    const token='save_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    postToApi({action:'save',token,pin:ADMIN_PIN_FOR_SAVE,date:importedDate,data:JSON.stringify(imported)}).then(async()=>{
+      ACTIVE_DATA=aplicarProp(imported);loadedDate=importedDate;writeCache(imported,importedDate);
+      let aviso2='';
+      try{
+        const chk=await apiJsonp({action:'get'});
+        if(chk&&chk.hasData&&Array.isArray(chk.data)){
+          if(chk.data.length!==imported.length)aviso2=`\n\n⚠ ATENÇÃO: a folha tem ${chk.data.length} registos mas importaste ${imported.length}. Confirma que a implementação do Apps Script foi atualizada.`;
+          ACTIVE_DATA=aplicarProp(chk.data);loadedDate=chk.date||importedDate;writeCache(chk.data,loadedDate);
+        }
+      }catch(e){}
+      document.querySelector('.date').textContent='Dados partilhados — '+loadedDate;
+      $('seller').value='';$('driver').value='';voltaSel=0;setMode('entregas');
+      const av=[];
+      if(semDriver.size)av.push('⚠ Motoristas sem correspondência na "Visão do dia" (sem contacto/volta): '+[...semDriver].join(', '));
+      if(multiSemCol.size)av.push('⚠ Motoristas com várias voltas mas sem coluna de transporte na "Visão detalhada" — todas as entregas ficaram na 1.ª volta: '+[...multiSemCol].join(', '));
+      alert(`Excel de Algoz guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nEntregas: ${imported.length}\nEstabelecimentos únicos: ${new Set(imported.map(x=>x.nome)).size}\nMotoristas: ${new Set(imported.map(x=>x.motorista)).size}${av.length?'\n\n'+av.join('\n'):''}${aviso2}`);
+      ADMIN_PIN_FOR_SAVE='';
+    }).catch(err=>{alert('Falha ao guardar no Google Sheets.\n\n'+(err&&err.message?err.message:err));ADMIN_PIN_FOR_SAVE='';});
+  }catch(err){alert('Não foi possível importar o Excel de Algoz.\n\n'+err.message);ADMIN_PIN_FOR_SAVE='';}
+  $('excelInput').value='';
 }
 function importExcel(file){
   const reader=new FileReader();
   reader.onload=e=>{
     try{
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
-      let imported,importedDate,retained,retSheetName,transpKey,headers,comTransp;
-      if(SITE==='algoz'){
-        ({imported,importedDate,retained,retSheetName,transpKey,headers,comTransp}=lerAlgoz(wb));
-      }else{
+      if(SITE==='algoz'){importAlgoz(wb);return;}
       const sheetName=wb.SheetNames.find(n=>n.trim().toUpperCase()==='ORDER.STATUS.DIA');
       if(!sheetName) throw new Error('A aba "ORDER.STATUS.DIA" não foi encontrada.');
       const ws=wb.Sheets[sheetName];
@@ -862,7 +871,6 @@ function importExcel(file){
         };
       }) : [];
 
-      }
       const allImported=imported.concat(retained);
       if(!ADMIN_PIN_FOR_SAVE) throw new Error('Introduza o PIN de administrador antes de importar.');
       if(!SITE)throw new Error('Escolhe primeiro o site (Faro ou Algoz).');
@@ -885,7 +893,7 @@ function importExcel(file){
         document.querySelector('.date').textContent='Dados partilhados — '+loadedDate;
         $('seller').value='';$('driver').value='';voltaSel=0;
         setMode('entregas');
-        const aviso=SITE==='algoz'?'\nVoltas calculadas por número de encomenda: '+comTransp:!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
+        const aviso=!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
         alert(`Excel de ${SITE_NOMES[SITE]} guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}${aviso}${aviso2}`);
         ADMIN_PIN_FOR_SAVE='';
       }).catch(err=>{alert('Falha ao guardar no Google Sheets.\n\n'+(err&&err.message?err.message:err));ADMIN_PIN_FOR_SAVE='';});
