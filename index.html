@@ -412,6 +412,8 @@ const normCli=c=>String(c==null?'':c).trim().replace(/\.0+$/,'').replace(/^0+(?=
 function aplicarProp(arr){
   (arr||[]).forEach(x=>{
     if(x._vo===undefined)x._vo=x.vendedor;
+    // Tira o código entre parênteses do fim do nome do motorista, ex.: "Pedro Soares (0006002418)"
+    if(x.motorista)x.motorista=String(x.motorista).replace(/\s*\(\s*\d+\s*\)\s*$/,'').trim();
     const p=PROP[normCli(x.cliente)];
     x.vendedor=p||x._vo;
   });
@@ -735,13 +737,15 @@ function importAlgoz(wb){
     const rd=n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:true});
     const det=rd(nDet),dia=rd(nDia);
     const txt=v=>String(v??'').trim();
+    const limpaMot=v=>txt(v).replace(/\s*\(\s*\d+\s*\)\s*$/,'').replace(/^\d+\s*[-–:]?\s*/,'').trim();
+    const codMot=v=>(String(v??'').match(/\d{5,}/)||[''])[0].replace(/^0+/,'');
     // Visão do dia: B = nº de entrega, D = motorista, E = contacto (sem o 351)
     const drivers=new Map();
     dia.forEach(r=>{
-      const m=txt(r[3]),t=txt(r[1]).replace(/\.0+$/,'');
+      const m=limpaMot(r[3]),t=txt(r[1]).replace(/\.0+$/,'');
       if(!m||!t||!/\d/.test(t))return;
       const k=_nk(m);let d=drivers.get(k);
-      if(!d){d={nome:m,contacto:'',transportes:new Set()};drivers.set(k,d);}
+      if(!d){d={nome:m,contacto:'',codigo:codMot(r[3]),transportes:new Set()};drivers.set(k,d);}
       d.transportes.add(t);
       let c=String(r[4]??'').replace(/\D/g,'');
       if(c.startsWith('351')&&c.length>9)c=c.slice(3);else if(c.length>9)c=c.slice(-9);
@@ -749,17 +753,25 @@ function importAlgoz(wb){
     });
     if(!drivers.size)throw new Error('Não encontrei motoristas/entregas na aba "Visão do dia" (colunas B e D).');
     const menor=d=>[...d.transportes].sort((a,b)=>{const x=parseFloat(a),y=parseFloat(b);return Number.isFinite(x)&&Number.isFinite(y)?x-y:String(a).localeCompare(String(b))})[0];
-    const achaDriver=m=>{
+    // Liga o motorista da Visão detalhada ao da Visão do dia: nome igual, ou código igual,
+    // ou nomes contidos um no outro, ou mesmo primeiro e último nome.
+    const achaDriver=(m,raw)=>{
+      const lista=[...drivers.values()];
       const k=_nk(m);if(drivers.has(k))return drivers.get(k);
-      const tok=_nk(String(m).split(/\s+/)[0]);
-      const c=[...drivers.entries()].filter(([kk])=>kk.startsWith(tok));
-      return c.length===1?c[0][1]:null;
+      const cod=codMot(raw);
+      if(cod){const c=lista.filter(d=>d.codigo&&d.codigo===cod);if(c.length===1)return c[0];}
+      const A=nomeTokens(m);
+      if(!A.length)return null;
+      const cont=lista.filter(d=>{const B=nomeTokens(d.nome);if(!B.length)return false;const [p,g]=A.length<=B.length?[A,B]:[B,A];return p.every(t=>g.includes(t));});
+      if(cont.length===1)return cont[0];
+      const pu=lista.filter(d=>mesmaPessoa(m,d.nome));
+      return pu.length===1?pu[0]:null;
     };
     // Coluna de transporte opcional na visão detalhada (cabeçalho com "transp")
     const hdr=det[0]||[];
     const colT=hdr.findIndex(h=>_nk(h).includes('transp'));
-    // Visão detalhada: B proprietário, E motorista, F dia de entrega, H estabelecimento, J localidade
-    let rows=det.map((r,i)=>({r,i,d:normalizeDate(r[5])})).filter(o=>txt(o.r[7])&&txt(o.r[4])&&!(o.i===0&&!o.d));
+    // Visão detalhada: B proprietário, E motorista, F dia de entrega, H nº cliente, I estabelecimento, J localidade
+    let rows=det.map((r,i)=>({r,i,d:normalizeDate(r[5])})).filter(o=>(txt(o.r[7])||txt(o.r[8]))&&txt(o.r[4])&&!(o.i===0&&!o.d));
     const datas=rows.filter(o=>o.d);
     let latest=null;
     if(datas.length){
@@ -770,13 +782,13 @@ function importAlgoz(wb){
     if(!rows.length)throw new Error('Não encontrei entregas na aba "Visão detalhada".');
     let semDriver=new Set(),multiSemCol=new Set();
     const imported=rows.map(({r})=>{
-      const mot=txt(r[4]);const d=achaDriver(mot);
+      const mot=limpaMot(r[4]);const d=achaDriver(mot,r[4]);
       let transporte='';
       if(d){
         if(colT>=0&&txt(r[colT]))transporte=txt(r[colT]).replace(/\.0+$/,'');
         else{transporte=menor(d);if(d.transportes.size>1)multiSemCol.add(d.nome);}
       }else semDriver.add(mot);
-      return{cliente:'',nome:txt(r[7]),cidade:txt(r[9]),vendedor:txt(r[1]),motorista:mot,contacto:d?d.contacto:'',status:'',ordem:'',transporte,id:''};
+      return{cliente:txt(r[7]).replace(/\.0+$/,''),nome:txt(r[8]),cidade:txt(r[9]),vendedor:txt(r[1]),motorista:mot,contacto:d?d.contacto:'',status:'',ordem:'',transporte,id:''};
     });
     const importedDate=latest?formatDate(latest):formatDate(new Date());
     if(!ADMIN_PIN_FOR_SAVE)throw new Error('Introduza o PIN de administrador antes de importar.');
