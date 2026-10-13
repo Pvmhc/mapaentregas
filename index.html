@@ -797,27 +797,53 @@ function importAlgoz(wb){
       }else semDriver.add(mot);
       return{cliente:txt(r[7]).replace(/\.0+$/,''),nome:txt(r[8]),cidade:txt(r[9]),vendedor:txt(r[1]),motorista:mot,contacto:d?d.contacto:'',status:'',ordem:'',transporte,id:''};
     });
+    // ===== Aba de retidos (nome com "retid"), lida pelos cabeçalhos como em Faro =====
+    const nRet=wb.SheetNames.find(s=>_nk(s).includes('retid'));
+    let retained=[],retInfo='';
+    if(nRet){
+      const rrows=XLSX.utils.sheet_to_json(wb.Sheets[nRet],{defval:'',raw:true});
+      const pick=(r,...nomes)=>{for(const n of nomes){const k=Object.keys(r).find(h=>_nk(h)===_nk(n));if(k!==undefined&&txt(r[k])!=='')return r[k];}return '';};
+      const vend=new Map();imported.forEach(x=>{if(x.cliente&&x.vendedor)vend.set(normCli(x.cliente),x.vendedor);});
+      const mapped=rrows.filter(r=>txt(pick(r,'Cliente'))).map(r=>{
+        const cliente=txt(pick(r,'Cliente')).replace(/\.0+$/,'');
+        const d=normalizeDate(pick(r,'Dta.criação','Data solic.remessa'));
+        return{d,item:{
+          tipo:'retido',cliente,
+          nome:txt(pick(r,'Nome')),cidade:txt(pick(r,'Cidade')),
+          vendedor:txt(pick(r,'Nome do vendedor','Vendedor','Proprietário da conta'))||vend.get(normCli(cliente))||PROP[normCli(cliente)]||'',
+          id:txt(pick(r,'Documento de vendas')),referencia:txt(pick(r,'Referência cliente')),
+          valor:pick(r,'Valor líquido'),data:d?formatDate(d):'',
+          bloqueio:txt(pick(r,'Bloqueio remessa')),motivo:txt(pick(r,'Status de recusa','Stat. aprovação'))
+        }};
+      });
+      const iso=latest?latest.toISOString().slice(0,10):'';
+      const usar=(iso&&mapped.some(o=>o.d))?mapped.filter(o=>o.d&&o.d.toISOString().slice(0,10)===iso):mapped;
+      retained=usar.map(o=>o.item);
+      retInfo=retained.length?'':'⚠ A aba "'+nRet+'" foi encontrada mas não tem linhas para a data '+(latest?formatDate(latest):'')+' (colunas lidas: Cliente, Nome, Cidade, Nome do vendedor, Documento de vendas, Dta.criação ou Data solic.remessa).';
+    }else retInfo='⚠ Aba de retidos não encontrada.';
+    const allImported=imported.concat(retained);
     const importedDate=latest?formatDate(latest):formatDate(new Date());
     if(!ADMIN_PIN_FOR_SAVE)throw new Error('Introduza o PIN de administrador antes de importar.');
     if(SITE!=='algoz')throw new Error('Escolhe primeiro o site Algoz.');
-    if(!confirm('Vais importar este Excel para o site de Algoz.\n\nOs dados atuais de Algoz serão substituídos. O outro site não é alterado.\n\n'+imported.length+' entregas, data '+importedDate+'.\n\nContinuar?')){ADMIN_PIN_FOR_SAVE='';$('excelInput').value='';return;}
+    if(!confirm('Vais importar este Excel para o site de Algoz.\n\nOs dados atuais de Algoz serão substituídos. O outro site não é alterado.\n\n'+imported.length+' entregas e '+retained.length+' retidas, data '+importedDate+'.\n\nContinuar?')){ADMIN_PIN_FOR_SAVE='';$('excelInput').value='';return;}
     const token='save_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-    postToApi({action:'save',token,pin:ADMIN_PIN_FOR_SAVE,date:importedDate,data:JSON.stringify(imported)}).then(async()=>{
-      ACTIVE_DATA=aplicarProp(imported);loadedDate=importedDate;writeCache(imported,importedDate);
+    postToApi({action:'save',token,pin:ADMIN_PIN_FOR_SAVE,date:importedDate,data:JSON.stringify(allImported)}).then(async()=>{
+      ACTIVE_DATA=aplicarProp(allImported);loadedDate=importedDate;writeCache(allImported,importedDate);
       let aviso2='';
       try{
         const chk=await apiJsonp({action:'get'});
         if(chk&&chk.hasData&&Array.isArray(chk.data)){
-          if(chk.data.length!==imported.length)aviso2=`\n\n⚠ ATENÇÃO: a folha tem ${chk.data.length} registos mas importaste ${imported.length}. Confirma que a implementação do Apps Script foi atualizada.`;
+          if(chk.data.length!==allImported.length)aviso2=`\n\n⚠ ATENÇÃO: a folha tem ${chk.data.length} registos mas importaste ${allImported.length}. Confirma que a implementação do Apps Script foi atualizada.`;
           ACTIVE_DATA=aplicarProp(chk.data);loadedDate=chk.date||importedDate;writeCache(chk.data,loadedDate);
         }
       }catch(e){}
       document.querySelector('.date').textContent='Dados partilhados — '+loadedDate;
       $('seller').value='';$('driver').value='';voltaSel=0;setMode('entregas');
       const av=[];
+      if(retInfo)av.push(retInfo);
       if(semDriver.size)av.push('⚠ Motoristas sem correspondência na "Visão do dia" (sem contacto/volta): '+[...semDriver].join(', '));
       if(multiSemCol.size)av.push('⚠ Motoristas com várias voltas mas sem coluna de transporte na "Visão detalhada" — todas as entregas ficaram na 1.ª volta: '+[...multiSemCol].join(', '));
-      alert(`Excel de Algoz guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nEntregas: ${imported.length}\nEstabelecimentos únicos: ${new Set(imported.map(x=>x.nome)).size}\nMotoristas: ${new Set(imported.map(x=>x.motorista)).size}${av.length?'\n\n'+av.join('\n'):''}${aviso2}`);
+      alert(`Excel de Algoz guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nEntregas: ${imported.length}\nEstabelecimentos únicos: ${new Set(imported.map(x=>x.nome)).size}\nMotoristas: ${new Set(imported.map(x=>x.motorista)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${av.length?'\n\n'+av.join('\n'):''}${aviso2}`);
       ADMIN_PIN_FOR_SAVE='';
     }).catch(err=>{alert('Falha ao guardar no Google Sheets.\n\n'+(err&&err.message?err.message:err));ADMIN_PIN_FOR_SAVE='';});
   }catch(err){alert('Não foi possível importar o Excel de Algoz.\n\n'+err.message);ADMIN_PIN_FOR_SAVE='';}
