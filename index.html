@@ -731,37 +731,65 @@ function lerAlgoz(wb){
   const achar=nome=>wb.SheetNames.find(n=>algozNome(n)===algozNome(nome));
   const detalhe=achar('Visão detalhada'),dia=achar('Visão do dia');
   if(!detalhe||!dia)throw new Error('Algoz exige as abas «Visão detalhada» e «Visão do dia» no mesmo Excel.');
+
   const d=XLSX.utils.sheet_to_json(wb.Sheets[detalhe],{header:1,defval:'',raw:false});
   const v=XLSX.utils.sheet_to_json(wb.Sheets[dia],{header:1,defval:'',raw:false});
-  const motoristas=new Map(),ordens=new Map(),telefones=new Map();
-  v.forEach((r,i)=>{
-    const nome=algozNome(r[3]),num=algozNum(r[1]),tel=String(r[4]??'').replace(/\D/g,'').replace(/^351(?=\d{9}$)/,'');
+
+  // Importa apenas o dia mais recente presente na folha «Visão do Dia».
+  const datasDia=v.slice(4).map(r=>normalizeDate(r[2])).filter(Boolean);
+  if(!datasDia.length)throw new Error('Não encontrei datas válidas na coluna C da folha «Visão do Dia».');
+  const latest=new Date(Math.max(...datasDia.map(x=>x.getTime())));
+  const mesmoDia=x=>{const dt=normalizeDate(x);return !!dt&&dt.getTime()===latest.getTime();};
+
+  const motoristas=new Map(),telefones=new Map(),rotas=new Set();
+  v.slice(4).filter(r=>mesmoDia(r[2])).forEach(r=>{
+    const nome=algozNome(r[3]),num=algozNum(r[1]);
+    const tel=String(r[4]??'').replace(/\D/g,'').replace(/^351(?=\d{9}$)/,'');
     if(!nome||!num||!/^\d+$/.test(num))return;
-    if(!motoristas.has(nome))motoristas.set(nome,new Set());
-    motoristas.get(nome).add(num);
-    if(tel){if(!telefones.has(nome))telefones.set(nome,new Set());telefones.get(nome).add(tel);}
-  });
-  motoristas.forEach((set,nome)=>{
-    const nums=[...set].sort((a,b)=>{const x=BigInt(a),y=BigInt(b);return x<y?-1:x>y?1:0;});
-    ordens.set(nome,nums);
+    rotas.add(num);
+    motoristas.set(nome,(motoristas.get(nome)||0)+1);
+    if(tel){
+      if(!telefones.has(nome))telefones.set(nome,new Set());
+      telefones.get(nome).add(tel);
+    }
   });
   const conflitos=[...telefones].filter(([n,set])=>set.size>1).map(([n])=>n);
-  if(conflitos.length)throw new Error('Há contactos diferentes para o mesmo motorista na Visão do dia: '+conflitos.join(', ')+'. Corrige o Excel antes de importar.');
-  const linhas=d.map((r,i)=>({r,i})).filter(({r})=>algozNome(r[4])&&String(r[7]??'').trim()&&motoristas.has(algozNome(r[4])));
-  if(!linhas.length)throw new Error('Não encontrei entregas com motorista e estabelecimento correspondentes nas duas abas.');
-  const avisos=[];
-  const imported=linhas.map(({r,i})=>{
-    const motorista=String(r[4]??'').trim(),chave=algozNome(motorista),nums=ordens.get(chave)||[];
-    // Procura o identificador de encomenda nas restantes colunas da linha detalhada.
-    const matches=[...new Set(r.map((c,j)=>[algozNum(c),j]).filter(([n,j])=>j!==1&&j!==4&&j!==7&&j!==9&&nums.includes(n)).map(([n])=>n))];
-    let num='';
-    if(matches.length===1)num=matches[0];
-    else if(nums.length===1)num=nums[0];
-    else avisos.push('Linha '+(i+1)+' — '+motorista+' ('+(matches.length>1?'vários números coincidentes':'sem número de encomenda comum')+')');
-    return {cliente:'ALG-'+algozNome(r[7])+'-'+algozNome(r[9]),nome:String(r[7]??'').trim(),cidade:String(r[9]??'').trim(),vendedor:String(r[1]??'').trim(),motorista,contacto:[...(telefones.get(chave)||[])][0]||'',status:'',ordem:'',transporte:num,id:num};
+  if(conflitos.length)throw new Error('Há contactos diferentes para o mesmo motorista na Visão do Dia de '+formatDate(latest)+': '+conflitos.join(', ')+'. Corrige o Excel antes de importar.');
+
+  const linhas=d.slice(3).map((r,i)=>({r,i:i+3})).filter(({r})=>
+    mesmoDia(r[5]) &&
+    algozNome(r[4]) &&
+    String(r[7]??'').trim() &&
+    String(r[8]??'').trim() &&
+    rotas.has(algozNum(r[3]))
+  );
+  if(!linhas.length)throw new Error('Não encontrei entregas de '+formatDate(latest)+' com «Mapa Entrega» correspondente à coluna «Número» da folha «Visão do Dia».');
+
+  const imported=linhas.map(({r})=>{
+    const motorista=String(r[4]??'').trim(),chave=algozNome(motorista);
+    const rota=algozNum(r[3]);
+    return {
+      cliente:algozNum(r[7]),
+      nome:String(r[8]??'').trim(),
+      cidade:String(r[9]??'').trim(),
+      vendedor:String(r[1]??'').trim(),
+      motorista,
+      contacto:[...(telefones.get(chave)||[])][0]||'',
+      status:String(r[13]??'').trim(),
+      ordem:'',
+      transporte:rota,
+      id:String(r[6]??'').trim()
+    };
   });
-  if(avisos.length)throw new Error('Não é possível identificar a volta de algumas entregas com segurança. A Visão detalhada precisa de uma coluna com o mesmo número de encomenda da coluna B da Visão do dia. Exemplos:\n'+avisos.slice(0,8).join('\n')+'\nNenhum dado foi substituído.');
-  return {imported,importedDate:new Date().toLocaleDateString('pt-PT'),retained:[],retSheetName:null,transpKey:'N.º encomenda (Visão do dia)',headers:['Visão detalhada','Visão do dia'],comTransp:imported.length};
+  return {
+    imported,
+    importedDate:formatDate(latest),
+    retained:[],
+    retSheetName:null,
+    transpKey:'Mapa Entrega (Visão detalhada)',
+    headers:['Visão detalhada','Visão do dia'],
+    comTransp:imported.filter(x=>x.transporte).length
+  };
 }
 function importExcel(file){
   const reader=new FileReader();
