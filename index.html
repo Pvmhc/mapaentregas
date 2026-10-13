@@ -734,7 +734,13 @@ function importAlgoz(wb){
     const nDet=find('visaodetalhada'),nDia=find('visaododia');
     if(!nDet)throw new Error('A aba "Visão detalhada" não foi encontrada.');
     if(!nDia)throw new Error('A aba "Visão do dia" não foi encontrada.');
-    const rd=n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:true});
+    // Lê sempre a partir da célula A1, para a coluna A ser o índice 0 mesmo que a folha comece noutra coluna/linha.
+    const rd=n=>{
+      const ws=wb.Sheets[n];
+      const ref=XLSX.utils.decode_range(ws['!ref']||'A1:A1');
+      ref.s.c=0;ref.s.r=0;
+      return XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true,range:ref});
+    };
     const det=rd(nDet),dia=rd(nDia);
     const txt=v=>String(v??'').trim();
     const limpaMot=v=>txt(v).replace(/\s*\(\s*\d+\s*\)\s*$/,'').replace(/^\d+\s*[-–:]?\s*/,'').trim();
