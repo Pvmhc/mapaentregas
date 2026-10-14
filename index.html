@@ -8,7 +8,7 @@
 (function(){var t=null;try{t=localStorage.getItem('orderStatusTheme')}catch(e){}
 if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);
-try{if(sessionStorage.getItem('orderStatusUnlocked')!=='1')document.documentElement.classList.add('locked');}catch(e){document.documentElement.classList.add('locked');}
+try{var _t=+sessionStorage.getItem('orderStatusT')||0;if(!sessionStorage.getItem('orderStatusSess')||Date.now()-_t>1800000||_t>Date.now()){sessionStorage.removeItem('orderStatusSess');document.documentElement.classList.add('locked');}}catch(e){document.documentElement.classList.add('locked');}
 var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='dark'?'#070b14':'#111827');})();
 </script>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAAflBMVEWftqnX39v6+/tsiXlOcV36+/siXTsbiksNPCAOPCEMOB4OPCEJUCEUbjoXekLr7PAqgFUZg0YSajkfm1Z/l4kAAAD+/v7////l5+r///83a0wPPCH////k5+v///8ZRSsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0IZc9AAAAIHRSTlP99RT9/4j+617KKKMQU/9aBpuYSv8A/kb8KP75ZMG+/zUishoAAAEGSURBVHja7dTLdoMgEAZghpsab0lbR2C0vP9bVk2acqJS2WXhv/IoH8OgyD6z7HbtjodlWdbUaaDRHyng1mhdpYBrXaeM71iXmBO8G+D9S2wccFxliIJhDSAVfO8BO4VvAa7mDHYFpg43gX1c2KNLssicc8IgTwKOhd0soFeqjwAHwQ4fqeBk0MY/ANgSQOApuzSnP/Ie9kBkSRFw//iY81r8jlEtopHaS9gCrZnCSAtJ0jwD03DhPRjTriqocRydR0BBMD4yzcDQAAkz8s0TRwI9A8qfN3IyXxJduXdEi3uFSwCWCrsgX3oo/m5UNPcQzPACqrygogwed5eSqMjPP98J3gH8AJ0+ugngKyLhAAAAAElFTkSuQmCC">
@@ -232,6 +232,47 @@ html.locked body{overflow:hidden}
 .em-btn{border:1px solid var(--line);background:var(--btn);color:var(--text);border-radius:10px;height:38px;padding:0 14px;font-weight:800;font-size:13px;cursor:pointer;flex:0 0 auto}
 .em-btn:active{background:var(--btn-active)}
 .em-busy{opacity:.55;pointer-events:none}
+/* ===== Estilo arredondado (topo verde, pílulas, cartões redondos) ===== */
+:root{--rd-green:#0f6b3a;--rd-green2:#0b5a31;--bg:#eceff3}
+html[data-theme=dark]{--rd-green:#0d3f27;--rd-green2:#092f1d;--bg:#070b14}
+header.top{background:linear-gradient(160deg,var(--rd-green),var(--rd-green2));color:#fff;border-bottom:0;border-radius:0 0 28px 28px;padding:16px 16px 16px;box-shadow:0 8px 24px rgba(11,90,49,.28);backdrop-filter:none}
+header.top h1,header.top .kicker,header.top .date{color:#fff}
+header.top .kicker{opacity:.75}
+header.top .date{opacity:.85}
+header.top .site-chip{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:999px}
+header.top .count{background:#fff;color:var(--rd-green);border-radius:999px;padding:7px 12px}
+header.top .icon-btn{background:rgba(255,255,255,.18);color:#fff;border:0}
+header.top .icon-btn:active{background:rgba(255,255,255,.3)}
+header.top input,header.top select{border:0;border-radius:18px;background:#fff;color:#111827;height:46px;padding:0 16px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+header.top select{padding:0 8px 0 14px;font-size:14px}
+html[data-theme=dark] header.top input,html[data-theme=dark] header.top select{background:#16233d;color:#f8fafc}
+header.top .chip{border-radius:999px;border:1.5px solid rgba(255,255,255,.7);background:transparent;color:#fff}
+header.top .chip.on{background:#fff;color:var(--rd-green);border-color:#fff}
+.cards{padding:14px 14px}
+.card{border:0;border-radius:26px;padding:16px;background:var(--cbg);box-shadow:0 2px 6px rgba(15,23,42,.06),0 10px 26px rgba(15,23,42,.08)}
+html[data-theme=dark] .card{border:0;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.c-head{border-bottom:1px solid var(--cline)}
+.client{border-radius:16px;padding:9px 14px}
+.d-col{border-radius:18px;padding:11px 14px}
+.call{border-radius:999px;min-height:50px}
+.multi{border-radius:999px}
+.volta{border-radius:999px}
+.s-av{border-width:2px}
+.toast{border-radius:999px}
+.to-top{border-radius:50%}
+.pin-box,.cfg-box{border-radius:28px}
+.cfg-row,.em-row{border-radius:18px}
+.cfg-up,.em-btn,.help-ok,.em-add input{border-radius:14px}
+.lock .pin-pad button,.pin-pad button{border-radius:18px}
+.bottom-bar{border-top:0;border-radius:26px 26px 0 0;box-shadow:0 -8px 26px rgba(15,23,42,.14)}
+.bottom-bar .mode-tabs{background:var(--panel);border-radius:999px;padding:4px;gap:4px}
+.bottom-bar .mode-tab{border:0;border-radius:999px;padding:10px 10px}
+.bottom-bar .mode-tab.selected{background:var(--rd-green);color:#fff}
+.bottom-bar .chip{border-radius:999px;height:36px}
+.bottom-bar .chip.on{background:var(--rd-green);border-color:var(--rd-green);color:#fff}
+.install-prompt{border-radius:26px}
+.install-btn{border-radius:999px}
+
 </style>
 <style>
 .mode-tabs{display:flex;gap:8px;margin:12px 0 4px}.mode-tab{flex:1;border:1px solid var(--border,#cbd5e1);border-radius:12px;background:transparent;color:inherit;padding:12px 10px;font:inherit;font-weight:750;cursor:pointer}.mode-tab.selected{background:#176c47;color:white;border-color:#176c47}.mode-tab span{font-size:12px;opacity:.8}.retained-card .retained-badge{display:inline-block;background:#fff0e9;color:#a13e16;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:750}.retained-orders{display:grid;gap:8px;margin-top:12px}.retained-order{padding:10px 12px;border:1px solid var(--border,#d7dce2);border-radius:10px;font-size:13px;display:grid;gap:5px}.retained-order strong{font-size:14px}.retained-meta{display:flex;flex-wrap:wrap;gap:6px 14px;opacity:.85}.retained-summary{margin:6px 0 10px;font-size:13px;opacity:.8}.retained-card .seller{margin-top:10px}
@@ -285,7 +326,8 @@ html.nosite body{overflow:hidden}
   <div class="pin-box">
     <div class="lock-ico"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzIyYTM1YSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzBmNWEyZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPgo8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0idXJsKCNnKSIvPgo8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyNTYgMjYyKSBzY2FsZSgxLjApIHRyYW5zbGF0ZSgtMjU2IC0yNzIpIj4KICA8ZyBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1vcGFjaXR5PSIuNTUiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PHBhdGggZD0iTTQwIDIxNGgzNCIvPjxwYXRoIGQ9Ik01MiAyNTBoMjYiLz48cGF0aCBkPSJNNDAgMjg2aDM0Ii8+PC9nPgogIDxyZWN0IHg9IjkyIiB5PSIxNjgiIHdpZHRoPSIyMDQiIGhlaWdodD0iMTUwIiByeD0iMTYiIGZpbGw9IiNmZmYiLz4KICA8cGF0aCBkPSJNMzA4IDIwNmg2MmExNiAxNiAwIDAgMSAxMyA3bDQ0IDYyYTE2IDE2IDAgMCAxIDMgOXYzNGExNiAxNiAwIDAgMS0xNiAxNkgzMDh6IiBmaWxsPSIjZmZmIi8+CiAgPHBhdGggZD0iTTMyNiAyMjRoNDBhOCA4IDAgMCAxIDYuNSAzLjRMNDAyIDI3MGgtNzZ6IiBmaWxsPSIjMTQ1MzJkIiBmaWxsLW9wYWNpdHk9Ii44NSIvPgogIDxyZWN0IHg9IjkyIiB5PSIzMTYiIHdpZHRoPSIzMzgiIGhlaWdodD0iMjIiIHJ4PSI4IiBmaWxsPSIjZTVlN2ViIi8+CiAgPGNpcmNsZSBjeD0iMTc4IiBjeT0iMzQ2IiByPSIzOCIgZmlsbD0iIzBmM2QyMiIvPjxjaXJjbGUgY3g9IjE3OCIgY3k9IjM0NiIgcj0iMjIiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNzgiIGN5PSIzNDYiIHI9IjgiIGZpbGw9IiMwZjNkMjIiLz4KICA8Y2lyY2xlIGN4PSIzNjQiIGN5PSIzNDYiIHI9IjM4IiBmaWxsPSIjMGYzZDIyIi8+PGNpcmNsZSBjeD0iMzY0IiBjeT0iMzQ2IiByPSIyMiIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjM2NCIgY3k9IjM0NiIgcj0iOCIgZmlsbD0iIzBmM2QyMiIvPgo8L2c+PC9zdmc+" alt="Order Status"></div>
     <h2>Order Status Dia</h2><p>Introduza o PIN para entrar</p>
-    <div class="pin-dots" id="lockDots"><i></i><i></i><i></i><i></i></div>
+    <div class="pin-dots" id="lockDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <p id="lockMsg" style="min-height:16px;margin:-6px 0 10px;font-size:12px;font-weight:600;color:var(--muted)"></p>
     <div class="pin-pad" id="lockPad">
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
@@ -334,7 +376,7 @@ html.nosite body{overflow:hidden}
 <div id="pinBack" class="pin-back" role="dialog" aria-modal="true" aria-label="Introduzir PIN">
   <div class="pin-box">
     <h2>Importar Excel</h2><p>Introduza o PIN para continuar</p>
-    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="pin-pad" id="pinPad">
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
@@ -346,7 +388,7 @@ html.nosite body{overflow:hidden}
 <div id="cfgPinBack" class="pin-back" role="dialog" aria-modal="true" aria-label="PIN das definições">
   <div class="pin-box">
     <h2>Definições</h2><p>Introduza o PIN para continuar</p>
-    <div class="pin-dots" id="cfgPinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="pin-dots" id="cfgPinDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="pin-pad" id="cfgPinPad">
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
@@ -402,6 +444,23 @@ html.nosite body{overflow:hidden}
 // Ligação ao Google Apps Script. O HTML pode estar alojado fora do Google.
 const API_URL='https://script.google.com/macros/s/AKfycbye4o-a5gl067XL0SzzoUOdpYqGJhd737Q27ZlCgdMWw9y8jsXzkpJgn7TvwsAms3Y/exec';
 let ADMIN_PIN_FOR_SAVE='';
+// ===== Segurança: nenhum PIN está neste ficheiro. Os PINs são conferidos só no servidor (Apps Script). =====
+const PIN_LEN=6;
+let SESS='';try{SESS=sessionStorage.getItem('orderStatusSess')||'';}catch(e){}
+let CFG_PIN_MEM='';   // PIN das Definições, só em memória enquanto o painel está aberto
+const SESSAO_MAX_MS=30*60*1000;  // tempo máximo aberto: 30 minutos desde a entrada
+function sessaoTempoEsgotado(){
+  try{const t=+sessionStorage.getItem('orderStatusT')||0;return !!SESS&&(!t||Date.now()-t>=SESSAO_MAX_MS||t>Date.now());}catch(e){return false;}
+}
+setInterval(()=>{if(sessaoTempoEsgotado()){sessaoExpirada(true);}},10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sessaoTempoEsgotado())sessaoExpirada(true);});
+function sessaoExpirada(tempo){
+  SESS='';CFG_PIN_MEM='';
+  try{sessionStorage.removeItem('orderStatusSess');sessionStorage.removeItem('orderStatusT');}catch(e){}
+  try{if(typeof cfgPanel!=='undefined'&&cfgPanel)cfgPanel.classList.remove('show');if(typeof emBloquear==='function')emBloquear();}catch(e){}
+  document.documentElement.classList.add('locked');
+  const m=document.getElementById('lockMsg');if(m){m.textContent=tempo===true?'Passaram 30 minutos. A app fechou, introduza o PIN para voltar a abrir.':'A sessão terminou. Introduza o PIN de novo.';m.style.color='';}
+}
 let SITE=(()=>{try{const x=sessionStorage.getItem('orderStatusSite');return x==='algoz'||x==='faro'?x:'';}catch(e){return '';}})();
 const SITE_NOMES={faro:'Faro',algoz:'Algoz'};
 // ===== Proprietários das contas (televenda -> proprietário real) =====
@@ -451,15 +510,15 @@ function apiJsonp(params={}){
     const script=document.createElement('script');
     const timeout=setTimeout(()=>{cleanup();reject(new Error('Tempo esgotado ao contactar o servidor.'));},20000);
     function cleanup(){clearTimeout(timeout);delete window[cb];script.remove();}
-    window[cb]=data=>{cleanup();resolve(data);};
+    window[cb]=data=>{cleanup();if(data&&data.error==='SESSAO')sessaoExpirada();resolve(data);};
     script.onerror=()=>{cleanup();reject(new Error('Não foi possível contactar o Google Apps Script.'));};
-    const q=new URLSearchParams({site:SITE,...params,callback:cb,_:String(Date.now())});
+    const q=new URLSearchParams({site:SITE,sess:SESS,...params,callback:cb,_:String(Date.now())});
     script.src=API_URL+'?'+q.toString();
     document.head.appendChild(script);
   });
 }
 function postToApi(fields){
-  fields={site:SITE,...fields};
+  fields={site:SITE,sess:SESS,...fields};
   return new Promise((resolve,reject)=>{
     const token=fields.token;
     let frame=document.getElementById('orderStatusPostFrame');
@@ -469,7 +528,7 @@ function postToApi(fields){
     document.body.appendChild(form);form.submit();form.remove();
     const started=Date.now();
     const check=async()=>{
-      try{const result=await apiJsonp({action:'status',token});if(result&&result.done){if(result.ok)resolve(result);else reject(new Error(result.error||'O servidor recusou a operação.'));return;}}catch(e){}
+      try{const result=await apiJsonp({action:'status',token});if(result&&result.done){if(result.ok)resolve(result);else{if(result.error==='SESSAO'){sessaoExpirada();reject(new Error('A sessão terminou. Volte a introduzir o PIN de entrada.'));}else reject(new Error(result.error||'O servidor recusou a operação.'));}return;}}catch(e){}
       if(Date.now()-started>30000){reject(new Error('O servidor não confirmou a operação. Confirma se a implementação do Apps Script foi atualizada.'));return;}
       setTimeout(check,800);
     };
@@ -490,6 +549,7 @@ async function loadSharedData(){
     try{
       const res=await apiJsonp({action:'get'});
       if(siteReq!==SITE)return;
+      if(res&&res.error==='SESSAO')return;
       if(res&&res.error)throw new Error(res.error);
       if(res&&res.hasData&&Array.isArray(res.data)){
         ACTIVE_DATA=aplicarProp(res.data);loadedDate=res.date||'';writeCache(res.data,loadedDate);
@@ -618,7 +678,7 @@ function enviarFotoNuvem_(k,foto){
     let frame=document.getElementById('orderStatusPostFrame');
     if(!frame){frame=document.createElement('iframe');frame.id='orderStatusPostFrame';frame.name='orderStatusPostFrame';frame.style.display='none';document.body.appendChild(frame);}
     const form=document.createElement('form');form.method='POST';form.action=API_URL;form.target=frame.name;form.style.display='none';
-    Object.entries({action:'fotos_save',chave:k,foto:foto}).forEach(([n,v])=>{const i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;form.appendChild(i);});
+    Object.entries({action:'fotos_save',chave:k,foto:foto,sess:SESS,pin:CFG_PIN_MEM}).forEach(([n,v])=>{const i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;form.appendChild(i);});
     document.body.appendChild(form);form.submit();form.remove();
     const t0=Date.now();
     const check=async()=>{
@@ -652,7 +712,7 @@ function guardarFotoVendedor(nome,file){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.hidden=true; document.body.appendChild(inp);
   let alvo='';
   inp.addEventListener('change',()=>{ if(inp.files[0]&&alvo) guardarFotoVendedor(alvo,inp.files[0]); inp.value=''; });
-  window.escolherFotoVendedor=nome=>{alvo=nome;inp.click();};
+  window.escolherFotoVendedor=nome=>{if(!CFG_PIN_MEM){showToast('Para mudar fotos, abra as Definições e introduza o PIN.');return;}alvo=nome;inp.click();};
 })();
 function render(){
   $('deliveryTotal').textContent='('+new Set(ACTIVE_DATA.filter(x=>!isRetained(x)).map(x=>String(x.cliente||x.nome||'').trim())).size+')';
@@ -689,7 +749,7 @@ function render(){
     let g=mapaG.get(k);if(!g){g=[];mapaG.set(k,g);grupos.push(g);}g.push(o);
   });
   const refsHtml=o=>`<div class="refs">
-        <div><span class="label">Transporte</span><b>${esc(String(o.transporte||'').replace(/\.0+$/,'')||'—')}</b></div>
+        <div><span class="label">Transporte</span><b>${esc(String(o.transporte||'').replace(/^\d+\|/,'').replace(/\.0+$/,'')||'—')}</b></div>
         <div><span class="label">Ordem</span><b>${esc(o.ordem||'—')}</b></div>
         <div><span class="label">Encomenda</span>${o.id?`<button type="button" class="enc" data-enc="${esc(o.id)}" title="Copiar e abrir Salesforce">${esc(o.id)}</button>`:'<b>—</b>'}</div>
       </div>`;
@@ -745,23 +805,33 @@ function importAlgoz(wb){
     const txt=v=>String(v??'').trim();
     const limpaMot=v=>txt(v).replace(/\s*\(\s*\d+\s*\)\s*$/,'').replace(/^\d+\s*[-–:]?\s*/,'').trim();
     const codMot=v=>(String(v??'').match(/\d{5,}/)||[''])[0].replace(/^0+/,'');
-    // Visão do dia: B = nº de entrega, D = motorista, E = contacto (sem o 351)
-    const drivers=new Map();
-    dia.forEach(r=>{
-      // Se a coluna D só tiver o código do motorista, usa-o como identificação (a ligação faz-se pelo código)
+    const dk=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    // ---- Visão detalhada: B proprietário, D mapa de entrega, E motorista, F dia, H nº cliente, I estabelecimento, J localidade
+    let rows=det.map((r,i)=>({r,i,d:normalizeDate(r[5])})).filter(o=>(txt(o.r[7])||txt(o.r[8]))&&txt(o.r[4])&&o.d);
+    if(!rows.length)throw new Error('Não encontrei entregas (com data na coluna F) na aba "Visão detalhada".');
+    const latest=new Date(Math.max(...rows.map(o=>o.d.getTime())));
+    rows=rows.filter(o=>dk(o.d)===dk(latest));
+    // ---- Visão do dia (só o dia mais recente): B = nº do mapa, D = motorista, E = contacto (sem o 351)
+    const mapas=new Map(),drivers=new Map();
+    let diaRows=dia.filter(r=>{const dd=normalizeDate(r[2]);return dd&&dk(dd)===dk(latest)&&txt(r[1])&&txt(r[3]);});
+    let avDia='';
+    if(!diaRows.length){diaRows=dia.filter(r=>txt(r[1])&&txt(r[3]));avDia='⚠ Na "Visão do dia" não há linhas com a data '+formatDate(latest)+' (coluna C): usei todas as linhas, as voltas podem estar erradas.';}
+    diaRows.forEach(r=>{
       const m=limpaMot(r[3])||txt(r[3]),t=txt(r[1]).replace(/\.0+$/,'');
-      if(!m||!t||!/\d/.test(t))return;
+      if(!t||!/\d/.test(t))return;
       const k=_nk(m);let d=drivers.get(k);
       if(!d){d={nome:m,contacto:'',codigo:codMot(r[3]),transportes:new Set()};drivers.set(k,d);}
       d.transportes.add(t);
       let c=String(r[4]??'').replace(/\D/g,'');
       if(c.startsWith('351')&&c.length>9)c=c.slice(3);else if(c.length>9)c=c.slice(-9);
       if(c&&!d.contacto)d.contacto=c;
+      mapas.set(t,d);
     });
-    if(!drivers.size)throw new Error('Não encontrei motoristas/entregas na aba "Visão do dia" (colunas B e D).');
-    const menor=d=>[...d.transportes].sort((a,b)=>{const x=parseFloat(a),y=parseFloat(b);return Number.isFinite(x)&&Number.isFinite(y)?x-y:String(a).localeCompare(String(b))})[0];
-    // Liga o motorista da Visão detalhada ao da Visão do dia: nome igual, ou código igual,
-    // ou nomes contidos um no outro, ou mesmo primeiro e último nome.
+    if(!drivers.size)throw new Error('Não encontrei motoristas/mapas na aba "Visão do dia" (colunas B e D).');
+    // 1.ª volta = menor nº de mapa do motorista, 2.ª = o seguinte, etc.
+    const cmp=(a,b)=>{const x=parseFloat(a),y=parseFloat(b);return Number.isFinite(x)&&Number.isFinite(y)?x-y:String(a).localeCompare(String(b))};
+    drivers.forEach(d=>{d.lista=[...d.transportes].sort(cmp);});
+    // Liga o motorista (só quando o mapa não é encontrado): nome igual, código igual, nomes contidos ou mesmo 1.º e último nome.
     const achaDriver=(m,raw)=>{
       const lista=[...drivers.values()];
       const k=_nk(m);if(drivers.has(k))return drivers.get(k);
@@ -774,28 +844,21 @@ function importAlgoz(wb){
       const pu=lista.filter(d=>mesmaPessoa(m,d.nome));
       return pu.length===1?pu[0]:null;
     };
-    // Coluna de transporte opcional na visão detalhada (cabeçalho com "transp")
-    const hdr=det[0]||[];
-    const colT=hdr.findIndex(h=>_nk(h).includes('transp'));
-    // Visão detalhada: B proprietário, E motorista, F dia de entrega, H nº cliente, I estabelecimento, J localidade
-    let rows=det.map((r,i)=>({r,i,d:normalizeDate(r[5])})).filter(o=>(txt(o.r[7])||txt(o.r[8]))&&txt(o.r[4])&&!(o.i===0&&!o.d));
-    const datas=rows.filter(o=>o.d);
-    let latest=null;
-    if(datas.length){
-      latest=new Date(Math.max(...datas.map(o=>o.d.getTime())));
-      const iso=latest.toISOString().slice(0,10);
-      rows=rows.filter(o=>o.d&&o.d.toISOString().slice(0,10)===iso);
-    }
-    if(!rows.length)throw new Error('Não encontrei entregas na aba "Visão detalhada".');
+    // Proprietário em branco na coluna B: usa a BASE DE VENDAS (Proprietário da conta) e depois o mesmo cliente noutra linha.
+    const base=new Map(),cliVend=new Map();
+    det.forEach(r=>{const c=normCli(r[7]),v=txt(r[1]);if(c&&v&&!cliVend.has(c))cliVend.set(c,v);});
+    const nBase=wb.SheetNames.find(s=>_nk(s)==='basedevendas');
+    if(nBase)XLSX.utils.sheet_to_json(wb.Sheets[nBase],{defval:'',raw:true}).forEach(r=>{const id=normCli(r['ID do Cliente SAP']),p=txt(r['Proprietário da conta']);if(id&&p&&!base.has(id))base.set(id,p);});
     let semDriver=new Set(),multiSemCol=new Set();
     const imported=rows.map(({r})=>{
-      const mot=limpaMot(r[4]);const d=achaDriver(mot,r[4]);
-      let transporte='';
-      if(d){
-        if(colT>=0&&txt(r[colT]))transporte=txt(r[colT]).replace(/\.0+$/,'');
-        else{transporte=menor(d);if(d.transportes.size>1)multiSemCol.add(d.nome);}
-      }else semDriver.add(mot);
-      return{cliente:txt(r[7]).replace(/\.0+$/,''),nome:txt(r[8]),cidade:txt(r[9]),vendedor:txt(r[1]),motorista:mot,contacto:d?d.contacto:'',status:'',ordem:'',transporte,id:''};
+      const mot=limpaMot(r[4]),mapa=txt(r[3]).replace(/\.0+$/,'');
+      let d=mapas.get(mapa)||achaDriver(mot,r[4]);
+      let transporte=mapa;
+      if(mapas.has(mapa)){transporte=(d.lista.indexOf(mapa)+1)+'|'+mapa;}
+      else if(mapa)multiSemCol.add(mapa);
+      if(!d)semDriver.add(mot);
+      const cli=txt(r[7]).replace(/\.0+$/,'');
+      return{cliente:cli,nome:txt(r[8]),cidade:txt(r[9]),vendedor:txt(r[1])||base.get(normCli(cli))||cliVend.get(normCli(cli))||'',motorista:mot,contacto:d?d.contacto:'',status:'',ordem:'',transporte,id:''};
     });
     // ===== Aba de retidos (nome com "retid"), lida pelos cabeçalhos como em Faro =====
     const nRet=wb.SheetNames.find(s=>_nk(s).includes('retid'));
@@ -842,7 +905,8 @@ function importAlgoz(wb){
       const av=[];
       if(retInfo)av.push(retInfo);
       if(semDriver.size)av.push('⚠ Motoristas sem correspondência na "Visão do dia" (sem contacto/volta): '+[...semDriver].join(', '));
-      if(multiSemCol.size)av.push('⚠ Motoristas com várias voltas mas sem coluna de transporte na "Visão detalhada" — todas as entregas ficaram na 1.ª volta: '+[...multiSemCol].join(', '));
+      if(avDia)av.push(avDia);
+      if(multiSemCol.size)av.push('⚠ Mapas da "Visão detalhada" que não existem na "Visão do dia" (sem volta definida): '+[...multiSemCol].join(', '));
       alert(`Excel de Algoz guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nEntregas: ${imported.length}\nEstabelecimentos únicos: ${new Set(imported.map(x=>x.nome)).size}\nMotoristas: ${new Set(imported.map(x=>x.motorista)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${av.length?'\n\n'+av.join('\n'):''}${aviso2}`);
       ADMIN_PIN_FOR_SAVE='';
     }).catch(err=>{alert('Falha ao guardar no Google Sheets.\n\n'+(err&&err.message?err.message:err));ADMIN_PIN_FOR_SAVE='';});
@@ -947,20 +1011,31 @@ function importExcel(file){
   };
   reader.readAsArrayBuffer(file);
 }
-const ENTRY_PIN='2026';
-let lockVal='';
+let lockVal='',lockBusy=false;
 const lockDots=$('lockDots');
 function lockDraw(){[...lockDots.children].forEach((d,i)=>d.classList.toggle('on',i<lockVal.length));}
-function lockKey(k){
+function lockMsgSet(t,erro){const el=$('lockMsg');el.textContent=t||'';el.style.color=erro?'#dc2626':'';}
+async function lockKey(k){
+  if(lockBusy)return;
   if(k==='b'){lockVal=lockVal.slice(0,-1);lockDraw();return;}
-  if(!/^\d$/.test(k)||lockVal.length>=4)return;
+  if(!/^\d$/.test(k)||lockVal.length>=PIN_LEN)return;
   lockVal+=k;lockDraw();
-  if(lockVal.length===4){
-    if(lockVal===ENTRY_PIN){
-      try{sessionStorage.setItem('orderStatusUnlocked','1')}catch(e){}
-      document.documentElement.classList.remove('locked');lockVal='';lockDraw();
-    }else{lockDots.classList.add('err');if(navigator.vibrate)navigator.vibrate(120);
-      setTimeout(()=>{lockDots.classList.remove('err');lockVal='';lockDraw();},400);}
+  if(lockVal.length===PIN_LEN){
+    lockBusy=true;lockMsgSet('A verificar…');
+    try{
+      // O PIN é conferido no servidor; o servidor devolve uma sessão (não há PIN guardado neste ficheiro).
+      const res=await postToApi({action:'login',token:'login_'+Date.now()+'_'+Math.random().toString(36).slice(2),pin:lockVal,sess:''});
+      const novo=res&&res.result&&res.result.sess;
+      if(!novo)throw new Error('Resposta inválida do servidor.');
+      SESS=novo;try{sessionStorage.setItem('orderStatusSess',novo);sessionStorage.setItem('orderStatusT',String(Date.now()))}catch(e){}
+      document.documentElement.classList.remove('locked');lockMsgSet('');
+      lockVal='';lockDraw();iniciarDados();
+    }catch(err){
+      lockDots.classList.add('err');if(navigator.vibrate)navigator.vibrate(120);
+      lockMsgSet(err&&err.message?err.message:'Não foi possível validar o PIN.',true);
+      setTimeout(()=>{lockDots.classList.remove('err');lockVal='';lockDraw();},400);
+    }
+    lockBusy=false;
   }
 }
 $('lockPad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)lockKey(b.dataset.k);});
@@ -968,8 +1043,7 @@ document.addEventListener('keydown',e=>{
   if(!document.documentElement.classList.contains('locked'))return;
   if(e.key>='0'&&e.key<='9')lockKey(e.key);else if(e.key==='Backspace')lockKey('b');
 });
-const CFG_PIN='2363';
-let cfgVal='';
+let cfgVal='',cfgBusy=false;
 const cfgPinBack=$('cfgPinBack'),cfgDots=$('cfgPinDots'),cfgPanel=$('cfgPanel');
 function cfgDraw(){[...cfgDots.children].forEach((d,i)=>d.classList.toggle('on',i<cfgVal.length));}
 function cfgPinClose(){cfgPinBack.classList.remove('show');cfgVal='';cfgDraw();}
@@ -982,23 +1056,33 @@ function cfgRefresh(){
     return `<div class="cfg-row"><span class="s-av" style="${f?'':'background:'+corNome(n)}">${f?`<img src="${esc(f)}" alt="">`:esc(iniciaisNome(n))}</span><span class="cfg-name">${esc(n)}</span><button type="button" class="cfg-up" data-nome="${esc(n)}">${f?'Mudar':'Carregar'}</button></div>`;
   }).join(''):'<p style="text-align:center">Ainda não há vendedores nos dados.</p>';
 }
-function cfgKey(k){
+async function cfgKey(k){
+  if(cfgBusy)return;
   if(k==='x'){cfgPinClose();return;}
   if(k==='b'){cfgVal=cfgVal.slice(0,-1);cfgDraw();return;}
-  if(!/^\d$/.test(k)||cfgVal.length>=4)return;
+  if(!/^\d$/.test(k)||cfgVal.length>=PIN_LEN)return;
   cfgVal+=k;cfgDraw();
-  if(cfgVal.length===4){
-    if(cfgVal===CFG_PIN){cfgPinClose();emBloquear();cfgPanel.classList.add('show');cfgRefresh();emCarregar();}
-    else{cfgDots.classList.add('err');if(navigator.vibrate)navigator.vibrate(120);
-      setTimeout(()=>{cfgDots.classList.remove('err');cfgVal='';cfgDraw();},400);}
+  if(cfgVal.length===PIN_LEN){
+    cfgBusy=true;
+    try{
+      // O PIN das Definições é conferido no servidor.
+      await postToApi({action:'pin_check',tipo:'definicoes',token:'cfg_'+Date.now()+'_'+Math.random().toString(36).slice(2),pin:cfgVal});
+      CFG_PIN_MEM=cfgVal;cfgPinClose();emBloquear();cfgPanel.classList.add('show');cfgRefresh();emCarregar();
+    }catch(err){
+      cfgDots.classList.add('err');if(navigator.vibrate)navigator.vibrate(120);
+      const m=err&&err.message?err.message:'';if(m&&m!=='PIN incorreto.')alert(m);
+      setTimeout(()=>{cfgDots.classList.remove('err');cfgVal='';cfgDraw();},400);
+    }
+    cfgBusy=false;
   }
 }
+function cfgFechar(){cfgPanel.classList.remove('show');emBloquear();CFG_PIN_MEM='';}
 $('cfgBtn').addEventListener('click',()=>{cfgVal='';cfgDraw();cfgPinBack.classList.add('show');});
 $('cfgPinPad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)cfgKey(b.dataset.k);});
 cfgPinBack.addEventListener('click',e=>{if(e.target===cfgPinBack)cfgPinClose();});
-$('cfgClose').addEventListener('click',()=>{cfgPanel.classList.remove('show');emBloquear();});
+$('cfgClose').addEventListener('click',cfgFechar);
 cfgPanel.addEventListener('click',e=>{
-  if(e.target===cfgPanel){cfgPanel.classList.remove('show');emBloquear();return;}
+  if(e.target===cfgPanel){cfgFechar();return;}
   const b=e.target.closest('.cfg-up');if(b)window.escolherFotoVendedor(b.dataset.nome);
 });
 document.addEventListener('keydown',e=>{
@@ -1014,9 +1098,9 @@ function pinClose(){pinBack.classList.remove('show');pinVal='';pinDraw();}
 function pinKey(k){
   if(k==='x'){pinClose();return;}
   if(k==='b'){pinVal=pinVal.slice(0,-1);pinDraw();return;}
-  if(!/^\d$/.test(k)||pinVal.length>=4)return;
+  if(!/^\d$/.test(k)||pinVal.length>=PIN_LEN)return;
   pinVal+=k;pinDraw();
-  if(pinVal.length===4){
+  if(pinVal.length===PIN_LEN){
     const candidate=pinVal;
     // O PIN é validado no servidor quando a importação é submetida.
     ADMIN_PIN_FOR_SAVE=candidate;pinClose();$('excelInput').click();
@@ -1035,7 +1119,7 @@ function emBusy(b){EM_BUSY=b;$('emSec').classList.toggle('em-busy',b);}
 function emErro(err,tit){alert((tit||'Não foi possível atualizar os emails.')+'\n\n'+(err&&err.message?err.message:err));}
 async function emPost(action,extra){
   const token='em_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-  const res=await postToApi({action,token,pin:CFG_PIN,...extra});
+  const res=await postToApi({action,token,pin:CFG_PIN_MEM,...extra});
   return (res&&res.result)||{};
 }
 async function emOperacao(action,extra){return (await emPost(action,extra)).emails||[];}
@@ -1177,7 +1261,7 @@ function importarProprietarios(file){
       if(!confirm('Colunas usadas:\n• Cliente: «'+kc+'»\n• Proprietário: «'+ko+'»\n\n'+lista.length+' clientes. Exemplos:\n'+ex+'\n\nImportar?'))return;
       const token='prop_'+Date.now()+'_'+Math.random().toString(36).slice(2);
       showToast('A guardar proprietários…');
-      postToApi({action:'prop_save',token,pin:CFG_PIN,data:JSON.stringify(lista)}).then(async res=>{
+      postToApi({action:'prop_save',token,pin:CFG_PIN_MEM,data:JSON.stringify(lista)}).then(async res=>{
         await carregarProp();
         const r=(res&&res.result)||{};
         alert('Proprietários guardados.\n\nNovos: '+(r.novos??'—')+'\nAtualizados: '+(r.alterados??'—')+'\nTotal na lista: '+(r.total??Object.keys(PROP).length));
@@ -1228,7 +1312,8 @@ function trocarSite(){
 $('sitePick').addEventListener('click',e=>{const b=e.target.closest('[data-site]');if(b)selectSite(b.dataset.site);});
 $('siteChip').addEventListener('click',trocarSite);
 aplicarSite();
-if(SITE)loadSharedData();else carregarFotosNuvem();
+function iniciarDados(){if(!SESS)return;if(SITE)loadSharedData();else carregarFotosNuvem();}
+iniciarDados();
 // ===== Scroll por cartão (como nos Picos) + botão de voltar ao topo =====
 (function(){
   const root=document.documentElement,hdr=document.querySelector('header.top'),bar=$('bottomBar'),btn=$('toTop');
