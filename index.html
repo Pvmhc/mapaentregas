@@ -153,6 +153,10 @@ html[data-theme=dark] .card{--cbg:var(--card);--cbox:#141d33;--clabel:var(--mute
 .multi{font-size:11.5px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:999px;padding:3px 10px;white-space:nowrap}
 html[data-theme=dark] .multi{color:#fcd34d;background:rgba(245,158,11,.18)}
 .multi-ph{display:none}
+.lev-tag{font-size:11.5px;font-weight:750;color:#1e40af;background:#dbeafe;border-radius:999px;padding:3px 10px;white-space:nowrap;align-self:flex-end}
+html[data-theme=dark] .lev-tag{color:#93c5fd;background:rgba(59,130,246,.2)}
+.lev-inline{grid-column:1/-1;justify-self:start;margin-bottom:6px}
+.card-lev{border-left:4px solid #3b82f6}
 .refs div+div{border-left:0}
 .refs div{gap:3px}
 .refs .label{font-size:10px;font-weight:400;letter-spacing:.04em;color:var(--clabel)}
@@ -202,6 +206,28 @@ html.locked body{overflow:hidden}
 .lock .pin-pad button{background:var(--card);border:1px solid var(--line);box-shadow:0 1px 3px rgba(15,23,42,.08)}
 .lock .pin-pad button:active{background:var(--pad-active)}
 .lock .pin-pad .ghost{background:transparent;border:0;box-shadow:none}
+.falhas-btn{height:34px;min-width:34px;border-radius:17px;border:0;background:#dc2626;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 11px 0 9px;font-weight:800;font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 0 0 0 rgba(220,38,38,.55);animation:falhaPulse 2.2s infinite}
+.falhas-btn[hidden]{display:none}
+.falhas-btn svg{width:16px;height:16px}
+.falhas-btn:active{transform:scale(.94)}
+.falhas-btn.zero{background:var(--btn);color:var(--muted);border:1px solid var(--line);animation:none;box-shadow:none}
+@keyframes falhaPulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}70%{box-shadow:0 0 0 9px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.pin-box.falhas-box{max-width:460px;max-height:88vh;display:flex;flex-direction:column;text-align:left;padding:18px 16px 14px}
+.falhas-box h2{display:flex;align-items:center;gap:8px;font-size:16px}
+.falhas-box h2 svg{width:20px;height:20px;color:#dc2626;flex:0 0 auto}
+.falhas-list{overflow:auto;margin:12px -4px 0;padding:0 4px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.falha-item{background:var(--panel,#f3f4f6);border:1px solid var(--line);border-left:4px solid #dc2626;border-radius:12px;padding:10px 12px}
+.falha-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.falha-nome{font-weight:800;font-size:14px;line-height:1.2;min-width:0;overflow-wrap:anywhere}
+.falha-total{font-weight:800;font-size:13px;white-space:nowrap;color:#dc2626}
+.falha-sub{margin-top:3px;font-size:12px;color:var(--muted)}
+.falha-linha{margin-top:6px;font-size:12px;line-height:1.35;display:flex;gap:8px;align-items:baseline;text-align:left}
+.falha-linha b{flex:0 0 auto}
+.falha-linha span{min-width:0}
+.falha-linha b{font-weight:800}
+.falha-tag{font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;background:rgba(245,158,11,.18);color:#b45309}
+html[data-theme=dark] .falha-tag{color:#fcd34d}
+.falhas-vazio{padding:22px 8px;text-align:center;color:var(--muted);font-size:13px}
 .pin-back{position:fixed;inset:0;z-index:200;background:rgba(17,24,39,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}
 .pin-back.show{display:flex}
 .pin-box{width:100%;max-width:300px;background:var(--card);border-radius:22px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -353,6 +379,10 @@ html.nosite body{overflow:hidden}
         <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
+      <button id="falhasBtn" type="button" class="falhas-btn" hidden aria-label="Clientes não entregues sem nova encomenda" title="Não entregues sem nova encomenda">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <span id="falhasN">0</span>
+      </button>
       <button id="cfgBtn" type="button" class="icon-btn" aria-label="Definições" title="Definições">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -423,6 +453,14 @@ html.nosite body{overflow:hidden}
       </div>
     </div>
     <button id="cfgClose" class="help-ok" type="button">Fechar</button>
+  </div>
+</div>
+<div id="falhasModal" class="pin-back" role="dialog" aria-modal="true" aria-label="Não entregues sem nova encomenda">
+  <div class="pin-box falhas-box">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Não entregues sem nova encomenda</h2>
+    <p id="falhasSub"></p>
+    <div id="falhasList" class="falhas-list"></div>
+    <button id="falhasOk" class="help-ok" type="button">Fechar</button>
   </div>
 </div>
 <div id="installHelp" class="pin-back" role="dialog" aria-modal="true" aria-label="Como instalar">
@@ -578,6 +616,8 @@ let ACTIVE_DATA=[];
 let loadedDate='';
 let activeMode='entregas';
 const isRetained=x=>x.tipo==='retido';
+const isFalha=x=>x.tipo==='falha';                       // "Não Entregue" sem encomenda nova (só Faro)
+const isEntrega=x=>!isRetained(x)&&!isFalha(x);          // entregas normais do dia
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const phone=s=>String(s??'').replace(/[^\d+]/g,'');
@@ -586,7 +626,7 @@ let voltaSel=0; // 0 = todas as voltas
 // Define a volta de cada transporte por motorista: o número mais pequeno é a 1.ª volta.
 function computeVolta(){
   const byDriver=new Map();
-  ACTIVE_DATA.filter(x=>!isRetained(x)).forEach(x=>{
+  ACTIVE_DATA.filter(x=>isEntrega(x)).forEach(x=>{
     const m=String(x.motorista||'').trim(), t=String(x.transporte||'').trim();
     if(!m||!t) return;
     if(!byDriver.has(m)) byDriver.set(m,new Set());
@@ -617,7 +657,7 @@ function fillFilters(){
   const vi=computeVolta();
   $('voltas').hidden=activeMode==='retidas';
   if(activeMode==='entregas')buildVoltaChips(vi);
-  const data=ACTIVE_DATA.filter(x=>activeMode==='retidas'?isRetained(x):!isRetained(x));
+  const data=ACTIVE_DATA.filter(x=>activeMode==='retidas'?isRetained(x):isEntrega(x));
   const okV=x=>activeMode==='retidas'||!voltaSel||voltaOf(x,vi)===voltaSel;
   const sellers=unique(data.filter(x=>okV(x)&&(activeMode==='retidas'||!drv||x.motorista===drv)).map(x=>x.vendedor));
   const drivers=unique(data.filter(x=>okV(x)&&(!sel||x.vendedor===sel)).map(x=>x.motorista));
@@ -714,15 +754,50 @@ function guardarFotoVendedor(nome,file){
   inp.addEventListener('change',()=>{ if(inp.files[0]&&alvo) guardarFotoVendedor(alvo,inp.files[0]); inp.value=''; });
   window.escolherFotoVendedor=nome=>{if(!CFG_PIN_MEM){showToast('Para mudar fotos, abra as Definições e introduza o PIN.');return;}alvo=nome;inp.click();};
 })();
+// ===== Não entregues sem nova encomenda (só Faro) =====
+function falhasGrupos(){
+  const g=new Map();
+  ACTIVE_DATA.filter(isFalha).forEach(x=>{const k=String(x.cliente||x.nome||'').trim();if(!k)return;if(!g.has(k))g.set(k,[]);g.get(k).push(x);});
+  return [...g.values()];
+}
+function falhasAtualiza(){
+  const b=$('falhasBtn');if(!b)return;
+  b.hidden=SITE!=='faro';
+  if(b.hidden)return;
+  const n=falhasGrupos().length;
+  $('falhasN').textContent=n;
+  b.classList.toggle('zero',n===0);
+  b.title=n?n+(n===1?' cliente não entregue sem nova encomenda':' clientes não entregues sem nova encomenda'):'Sem clientes por resolver';
+}
+function falhasAbrir(){
+  const dn=s=>{const m=String(s||'').match(/(\d+)\/(\d+)\/(\d+)/);return m?(+m[3])*10000+(+m[2])*100+(+m[1]):0;};
+  const money=v=>{const n=Number(v);return v!==''&&v!=null&&Number.isFinite(n)?n.toLocaleString('pt-PT',{style:'currency',currency:'EUR'}):'';};
+  const grupos=falhasGrupos().map(l=>l.slice().sort((a,b)=>dn(b.data)-dn(a.data)))
+    .sort((a,b)=>dn(b[0].data)-dn(a[0].data)||String(a[0].nome).localeCompare(String(b[0].nome),'pt-PT'));
+  $('falhasSub').textContent=grupos.length
+    ?'Falhas dos últimos 7 dias, sem encomenda nem entrega posterior. Dados de '+(loadedDate||'—')+'.'
+    :'';
+  $('falhasList').innerHTML=grupos.length?grupos.map(l=>{
+    const x=l[0],total=l.reduce((n,r)=>n+(Number(r.valor)||0),0);
+    return `<div class="falha-item"><div class="falha-top"><div class="falha-nome">${esc(x.nome||'Sem estabelecimento')}</div><div class="falha-total">${esc(money(total))}</div></div>
+      <div class="falha-sub">${esc([x.cidade,'Cliente '+x.cliente,x.vendedor].filter(Boolean).join(' · '))}</div>
+      ${l.map(r=>`<div class="falha-linha"><b>${esc(String(r.data||'').slice(0,5))}</b><span>${esc(r.motivo||'Sem motivo')}</span>${/^y/i.test(String(r.referencia||'').trim())?'<span class="falha-tag">Reagendado</span>':''}</div>`).join('')}</div>`;
+  }).join(''):'<div class="falhas-vazio">Sem clientes por resolver. Todos os não entregues já têm encomenda ou entrega posterior.</div>';
+  $('falhasModal').classList.add('show');
+}
+$('falhasBtn').addEventListener('click',falhasAbrir);
+$('falhasOk').addEventListener('click',()=>$('falhasModal').classList.remove('show'));
+$('falhasModal').addEventListener('click',e=>{if(e.target===$('falhasModal'))$('falhasModal').classList.remove('show');});
 function render(){
-  $('deliveryTotal').textContent='('+new Set(ACTIVE_DATA.filter(x=>!isRetained(x)).map(x=>String(x.cliente||x.nome||'').trim())).size+')';
+  falhasAtualiza();
+  $('deliveryTotal').textContent='('+new Set(ACTIVE_DATA.filter(x=>isEntrega(x)).map(x=>String(x.cliente||x.nome||'').trim())).size+')';
   $('retainedTotal').textContent='('+new Set(ACTIVE_DATA.filter(isRetained).map(x=>x.cliente)).size+')';
   if(activeMode==='retidas'){renderRetained();return;}
   const q=$('search').value.trim().toLowerCase(), s=$('seller').value, d=$('driver').value;
   const voltaInfo=computeVolta();
   const out=ACTIVE_DATA.filter(x=>{
-    if(isRetained(x))return false;
-    const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x._vo,x.motorista,x.contacto,x.ordem,x.transporte,x.id].join(' ').toLowerCase();
+    if(!isEntrega(x))return false;
+    const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x._vo,x.motorista,x.contacto,x.ordem,x.transporte,x.id,x.lev?'levantamento':''].join(' ').toLowerCase();
     return (!q||hay.includes(q))&&(!s||x.vendedor===s)&&(!d||x.motorista===d)&&(!voltaSel||voltaOf(x,voltaInfo)===voltaSel);
   });
   const uniqueClients=new Set(out.map(x=>String(x.cliente||x.nome||'').trim()).filter(Boolean));
@@ -748,7 +823,7 @@ function render(){
     const k=[String(o.cliente||o.nome||'').trim(),String(o.vendedor||'').trim(),String(o.motorista||'').trim(),inf?inf.numero:''].join('|');
     let g=mapaG.get(k);if(!g){g=[];mapaG.set(k,g);grupos.push(g);}g.push(o);
   });
-  const refsHtml=o=>`<div class="refs">
+  const refsHtml=(o,multi)=>`<div class="refs">${multi&&o.lev?'<span class="lev-tag lev-inline">Levantamento</span>':''}
         <div><span class="label">Transporte</span><b>${esc(String(o.transporte||'').replace(/^\d+\|/,'').replace(/\.0+$/,'')||'—')}</b></div>
         <div><span class="label">Ordem</span><b>${esc(o.ordem||'—')}</b></div>
         <div><span class="label">Encomenda</span>${o.id?`<button type="button" class="enc" data-enc="${esc(o.id)}" title="Copiar e abrir Salesforce">${esc(o.id)}</button>`:'<b>—</b>'}</div>
@@ -758,21 +833,22 @@ function render(){
     const p=phone((g.find(o=>phone(o.contacto))||x).contacto);
     const info=voltaInfo.get(String(x.motorista||'').trim()+'|'+String(x.transporte||'').trim());
     const por=[...new Set(g.map(colocouPor).filter(Boolean))].join(', ');
+    const nLev=g.filter(o=>o.lev).length,todasLev=nLev===g.length;
     const fmtTel=p.replace(/^(\+?\d{0,3}?)(\d{3})(\d{3})(\d{3})$/,(m,pre,a,b,c)=>(pre?pre+' ':'')+a+' '+b+' '+c);
-    return `<article class="card">
+    return `<article class="card${todasLev?' card-lev':''}">
       <div class="c-head">
         <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
-        <div class="c-side"><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>${g.length>1?`<span class="multi">${g.length} encomendas</span>`:'<span class="multi multi-ph" aria-hidden="true">1 encomenda</span>'}</div>
+        <div class="c-side"><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>${todasLev?'<span class="lev-tag">Levantamento</span>':nLev?`<span class="lev-tag">${nLev} levantamento${nLev===1?'':'s'}</span>`:''}${g.length>1?`<span class="multi">${g.length} encomendas</span>`:'<span class="multi multi-ph" aria-hidden="true">1 encomenda</span>'}</div>
       </div>
       <div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor</span><span class="seller-name">${esc(x.vendedor||'—')}</span></span>${por?`<span class="seller-by">Colocada por ${esc(por)}</span>`:''}</span></div>
       <div class="ops">
         <div class="driver">
           <div class="d-col"><div class="label">${ICO_TRUCK}<span>Motorista</span></div><div class="d-name">${esc(x.motorista||'—')}</div></div>
-          <div class="d-col"><div class="label">${ICO_ROUTE}<span>Entrega</span></div><div class="d-name">${info?`${info.numero}.ª volta`:'—'}</div></div>
+          <div class="d-col"><div class="label">${ICO_ROUTE}<span>${todasLev?'Tipo':'Entrega'}</span></div><div class="d-name">${todasLev?'Levantamento':info?`${info.numero}.ª volta`:'—'}</div></div>
         </div>
         ${p?`<a class="call" href="tel:${esc(p)}" aria-label="Ligar ${esc(fmtTel)}">${ICO_TEL}<span>${esc(fmtTel)}</span></a>`:`<div class="call off">${ICO_TEL}<span>Sem contacto</span></div>`}
       </div>
-      <div class="refs-all">${g.map(refsHtml).join('')}</div>
+      <div class="refs-all">${g.map(o=>refsHtml(o,g.length>1&&nLev>0)).join('')}</div>
     </article>`;
   }).join('');
   if(typeof cfgRefresh==='function')cfgRefresh();
@@ -927,6 +1003,9 @@ function importExcel(file){
       const norm=k=>String(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
       const headers=Object.keys(rows[0]);
       const transpKey=headers.find(k=>norm(k).includes('transp'));
+      // Peso total = coluna X (24.ª). Peso total 0 => levantamento (não é entrega).
+      const pesoKey=headers.find(k=>norm(k)==='pesototal')||headers[23];
+      const isLevantamento=v=>{if(v===''||v==null)return false;const n=typeof v==='number'?v:Number(String(v).trim().replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)&&n===0;};
       const dateKey='Data solic.remessa';
       const dates=rows.map(r=>normalizeDate(r[dateKey])).filter(Boolean);
       if(!dates.length) throw new Error('Não encontrei a coluna "Data solic.remessa" com datas válidas.');
@@ -945,7 +1024,8 @@ function importExcel(file){
         status:String(r['Stat. aprovação']??'').trim(),
         ordem:String(r['Documento Outbound']??'').trim(),
         transporte:transpKey?String(r[transpKey]??'').trim().replace(/\.0+$/,''):'',
-        id:String(r['Documento de vendas']??'').trim()
+        id:String(r['Documento de vendas']??'').trim(),
+        lev:isLevantamento(r[pesoKey])
       }));
       if(!imported.length) throw new Error('Não foram encontrados clientes para a data mais recente da folha.');
       const comTransp=imported.filter(x=>x.transporte&&x.motorista).length;
@@ -980,7 +1060,37 @@ function importExcel(file){
         };
       }) : [];
 
-      const allImported=imported.concat(retained);
+      // ===== Não entregues (aba VISÃO DETALHADA) SEM encomenda nem entrega depois da falha, nos últimos 7 dias =====
+      const DIAS_FALHAS=7;
+      let falhas=[],falhasInfo='';
+      try{
+        const nDetF=wb.SheetNames.find(n=>_nk(n)==='visaodetalhada');
+        if(!nDetF){falhasInfo='\n⚠ Aba "VISÃO DETALHADA" não encontrada: o botão dos não entregues fica vazio.';}
+        else{
+          const wsD=wb.Sheets[nDetF];
+          const refD=XLSX.utils.decode_range(wsD['!ref']||'A1:A1');refD.s.c=0;refD.s.r=0;
+          // Colunas: B vendedor, E motorista, F data, G número, H cód. entidade, I entidade, J localidade, K valor, N estado, O motivo, U reagendado
+          const det=XLSX.utils.sheet_to_json(wsD,{header:1,defval:'',raw:true,range:refD});
+          const dk=d=>d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+          const T=v=>String(v??'').trim();
+          const detRows=det.map(r=>({r,d:normalizeDate(r[5]),cli:normCli(r[7]),est:_nk(r[13])})).filter(o=>o.d&&o.cli&&o.est);
+          if(detRows.length){
+            const ultimo=new Map();   // cliente -> data mais recente com encomenda ou entrega
+            const marca=(cli,d)=>{if(!cli||!d)return;const k=dk(d);if(!ultimo.has(cli)||ultimo.get(cli)<k)ultimo.set(cli,k);};
+            rows.forEach(r=>marca(normCli(r['Cliente']),normalizeDate(r[dateKey])));
+            if(retSheetName)XLSX.utils.sheet_to_json(wb.Sheets[retSheetName],{defval:'',raw:true}).forEach(r=>marca(normCli(r['Cliente']),normalizeDate(r['Dta.criação'])));
+            detRows.forEach(o=>{if(o.est!=='naoentregue')marca(o.cli,o.d);});
+            const recente=new Date(Math.max(...detRows.map(o=>o.d.getTime())));
+            const limite=dk(new Date(recente.getFullYear(),recente.getMonth(),recente.getDate()-(DIAS_FALHAS-1)));
+            falhas=detRows.filter(o=>o.est==='naoentregue'&&dk(o.d)>=limite&&(ultimo.get(o.cli)||0)<=dk(o.d))
+              .map(({r,d,cli})=>({tipo:'falha',cliente:cli,nome:T(r[8]),cidade:T(r[9]),
+                vendedor:T(r[1])||baseMap.get(cli)||knownSellers.get(cli)||'',motorista:T(r[4]),id:T(r[6]),
+                valor:r[10]??'',data:formatDate(d),motivo:T(r[14]),referencia:T(r[20])}));
+          }
+        }
+      }catch(err){falhasInfo='\n⚠ Não foi possível calcular os não entregues: '+err.message;}
+
+      const allImported=imported.concat(retained,falhas);
       if(!ADMIN_PIN_FOR_SAVE) throw new Error('Introduza o PIN de administrador antes de importar.');
       if(!SITE)throw new Error('Escolhe primeiro o site (Faro ou Algoz).');
       if(!confirm('Vais importar este Excel para o site de '+SITE_NOMES[SITE]+'.\n\nOs dados atuais de '+SITE_NOMES[SITE]+' serão substituídos. O outro site não é alterado.\n\nContinuar?')){ADMIN_PIN_FOR_SAVE='';$('excelInput').value='';return;}
@@ -1003,7 +1113,7 @@ function importExcel(file){
         $('seller').value='';$('driver').value='';voltaSel=0;
         setMode('entregas');
         const aviso=!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
-        alert(`Excel de ${SITE_NOMES[SITE]} guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}${aviso}${aviso2}`);
+        alert(`Excel de ${SITE_NOMES[SITE]} guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}\nNão entregues sem nova encomenda: ${new Set(falhas.map(x=>x.cliente)).size} clientes${falhasInfo}${aviso}${aviso2}`);
         ADMIN_PIN_FOR_SAVE='';
       }).catch(err=>{alert('Falha ao guardar no Google Sheets.\n\n'+(err&&err.message?err.message:err));ADMIN_PIN_FOR_SAVE='';});
     }catch(err){alert('Não foi possível importar o Excel.\n\n'+err.message);}
