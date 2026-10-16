@@ -333,10 +333,16 @@ html.nosite body{overflow:hidden}
 .bottom-bar .voltas:empty{display:none}
 .bottom-bar .chip{height:34px}
 .site-chip{margin-left:0;flex:0 0 auto;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:12px;font-weight:800;cursor:pointer;vertical-align:middle}
-.client-row{display:flex;align-items:center;gap:8px}
-.sf-open{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:#00a1e0;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.sf-open svg{width:20px;height:20px}
-.sf-open:active{background:#0b86bb}
+/* ===== Uniformização visual: uma só família de cantos ===== */
+.card{border-radius:22px}
+.client-row{display:flex;align-items:stretch;background:var(--cbox);border-radius:16px;overflow:hidden}
+.client-row .client{background:transparent;border-radius:0;padding:9px 14px}
+.sf-open{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:40px;padding:0;border:0;border-radius:0;background:rgba(0,161,224,.13);color:#0095d5;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sf-open svg{width:22px;height:22px}
+.sf-open:active{background:rgba(0,161,224,.28)}
+html[data-theme=dark] .sf-open{background:rgba(0,161,224,.22);color:#38bdf8}
+.d-col{border-radius:16px}
+.call{border-radius:16px}
 /* ===== Versão PC (>=1024px): a app ocupa o ecrã todo ===== */
 @media(min-width:1024px){
   .app{max-width:none;width:100%}
@@ -356,6 +362,105 @@ html.nosite body{overflow:hidden}
   .bottom-bar .voltas{flex:1 1 0;margin-top:0}
   .empty{padding:40px 28px}
 }
+</style><style id="redesign2026">
+/* ORDER.STATUS.DIA — apresentação 2026. Camada visual; lógica e fontes de dados preservadas. */
+:root{--bg:#f0f4f7;--panel:#f1f5f8;--rd-green:#08683e;--rd-green2:#075c38;--line:#e1e8ec;--green:#087246}
+html[data-theme=dark]{--bg:#0a111a;--panel:#1c2a37;--rd-green:#0b4e33;--rd-green2:#083a28}
+body{background:var(--bg)}
+.app{max-width:900px;padding-bottom:calc(38px + var(--bar,0px))}
+header.top{position:relative;top:auto;z-index:21;border-radius:0;padding:18px 22px 19px;box-shadow:none;background:linear-gradient(115deg,var(--rd-green),var(--rd-green2))}
+header.top .site-line h1{font-size:clamp(29px,5.6vw,42px);letter-spacing:-.045em}
+header.top .kicker{font-size:12px;letter-spacing:.1em;opacity:.85}
+header.top .site-chip{height:30px;font-size:13px;padding:0 13px}
+header.top .date{font-size:13px;margin-top:6px;opacity:.9}
+header.top .count{font-size:15px;padding:9px 13px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+header.top .icon-btn{height:39px;width:39px;background:rgba(255,255,255,.13)}
+header.top .icon-btn svg{width:19px;height:19px}
+header.top .tools{gap:8px}
+.search-panel{padding:19px 20px 0;background:var(--bg)}
+.search-panel .search{margin:0;position:relative}
+.search-panel .search:before{content:'⌕';position:absolute;left:17px;top:50%;transform:translateY(-53%);font-size:31px;font-weight:400;color:#0d7048;pointer-events:none;line-height:1}
+.search-panel input,.search-panel select{background:var(--card);border:1px solid #d8e2e8;color:var(--text);border-radius:15px;box-shadow:0 2px 12px rgba(28,56,76,.04)}
+.search-panel #search{height:55px;padding:0 17px 0 53px;font-size:15px}
+.search-panel .filters{margin-top:12px;gap:10px}
+.search-panel select{height:48px;font-size:14px;padding:0 12px}
+.list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:21px 0 12px;padding-top:17px;border-top:1px solid var(--line)}
+.list-heading{display:flex;align-items:center;gap:9px;color:#08643c;font-weight:850;font-size:18px;white-space:nowrap}
+.list-heading svg{width:23px;height:23px}
+.list-toolbar .voltas{margin:0;display:flex;flex:1;max-width:380px;gap:3px;background:var(--card);padding:4px;border:1px solid var(--line);border-radius:14px}
+.list-toolbar .voltas[hidden]{display:none!important}
+.list-toolbar .chip{height:35px;min-width:0;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:12px;padding:0 7px}
+.list-toolbar .chip.on{background:var(--rd-green);color:#fff}
+.cards{padding:0 20px 24px;gap:15px}
+.card,html[data-theme=dark] .card{position:relative;background:var(--card);--cbg:var(--card);--cbox:var(--panel);border:1px solid var(--line);border-radius:19px;padding:19px 19px 14px;box-shadow:0 4px 16px rgba(19,48,73,.065);margin-bottom:14px}
+.card .c-head{border:0;padding:0;gap:9px;align-items:flex-start}
+.card .c-title{flex:1}
+.card .city{margin:0 0 7px;display:flex;gap:6px;color:#086e43;font-size:13px;font-weight:650}
+.card .city svg{width:16px;height:16px;flex-basis:16px}
+.card .name{font-size:clamp(18px,4.4vw,21px);line-height:1.23;color:var(--text);font-weight:850;letter-spacing:-.025em}
+.client-inline{font-size:11px;color:var(--muted);letter-spacing:.04em;margin-top:8px}
+.client-inline strong{font-size:13px;color:var(--label2);letter-spacing:0;margin-left:5px}
+.card .client-row{position:absolute;top:17px;right:17px;width:35px;height:35px;border-radius:10px;background:rgba(0,161,224,.11);overflow:hidden;opacity:.95}
+.card .sf-open{width:35px;height:35px;background:transparent}
+.card .sf-open svg{width:19px;height:19px}
+.card .client-row .client{display:none}
+.card .c-title{padding-right:39px}
+.card .c-side{position:static}
+.card .multi,.card .lev-tag{position:static;font-size:10px;padding:4px 8px}
+.card .multi-ph{display:none}
+.card .seller{margin:15px 0 0;padding:12px 13px;border:0;background:var(--panel);border-radius:13px;min-height:62px}
+.card .seller-main .s-label,.card .d-col .label{font-size:10px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.card .seller-main .seller-name{font-size:14px;font-weight:750}
+.card .ops{margin-top:0}
+.card .driver{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--panel);border-radius:0 0 13px 13px;padding:0 11px 12px}
+.card .d-col{background:transparent;border-radius:0;padding:9px 10px 1px}
+.card .d-col+.d-col{border-left:1px solid var(--line)}
+.card .d-name{font-size:14px;margin-top:5px;font-weight:750}
+.card .call{display:flex;justify-content:flex-start;gap:11px;margin:14px 0 4px;padding:0;background:transparent;color:#08643d;min-height:48px;border-radius:0;font-size:16px;box-shadow:none}
+.card .call-circle{width:43px;height:43px;flex:0 0 43px;display:grid;place-items:center;border-radius:50%;background:#e1f3e9;color:#08643d}
+.card .call-circle svg{width:21px;height:21px}
+.card .call-copy{display:flex;flex-direction:column;gap:3px}
+.card .call-copy small{font-size:12px;font-weight:450;color:var(--muted)}
+.card .call-copy strong{font-size:16px;letter-spacing:.01em}
+.card .refs-all{border-top:1px solid var(--line);padding-top:10px}
+.card .refs{margin-top:0;gap:0}
+.card .refs+.refs{margin-top:10px;padding-top:10px}
+.card .refs .label{font-size:9px;text-transform:capitalize;letter-spacing:0;color:var(--muted)}
+.card .refs b{font-size:12px}
+.card .refs div+div{border-left:1px solid var(--line)}
+.bottom-bar{background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:10px 13px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 25px rgba(29,53,70,.1)}
+.bottom-bar .mode-tabs{border-radius:16px;background:transparent;gap:6px;padding:0}
+.bottom-bar .mode-tab{border-radius:14px!important;min-height:49px;padding:9px 5px!important;font-size:13px!important;background:transparent}
+.bottom-bar .mode-tab.selected{background:var(--rd-green);color:#fff}
+.bottom-bar .mode-tab span{opacity:.8}
+html.snap-on .card.card-foco{border-color:var(--line);box-shadow:0 4px 16px rgba(19,48,73,.065)}
+html.snap-on .card.card-fora{opacity:1}
+html[data-theme=dark] .search-panel input,html[data-theme=dark] .search-panel select{border-color:var(--line)}
+html[data-theme=dark] .list-heading,html[data-theme=dark] .card .city,html[data-theme=dark] .card .call{color:#72dfa4}
+html[data-theme=dark] .card .call-circle{background:#163e2b;color:#72dfa4}
+@media(max-width:480px){
+ header.top{padding:13px 15px 15px}
+ header.top .tools{gap:5px}
+ header.top .icon-btn{height:33px;width:33px}
+ header.top .count{padding:7px 10px;font-size:13px}
+ header.top .site-line h1{font-size:30px}
+ header.top .site-chip{padding:0 8px;font-size:11px}
+ .search-panel{padding:14px 14px 0}
+ .search-panel #search{height:50px;font-size:14px}
+ .search-panel select{height:44px;font-size:12px;padding:0 5px}
+ .list-toolbar{margin:15px 0 11px;padding-top:13px;gap:8px}
+ .list-heading{font-size:15px;gap:5px}
+ .list-heading svg{width:19px;height:19px}
+ .list-toolbar .voltas{gap:1px;padding:3px}
+ .list-toolbar .chip{font-size:10.5px;padding:0 3px;height:32px}
+ .cards{padding:0 13px 18px}
+ .card,html[data-theme=dark] .card{padding:15px 15px 12px;border-radius:17px}
+ .card .client-row{top:13px;right:13px}
+ .card .name{font-size:18px}
+ .bottom-bar .mode-tab{font-size:12px!important}
+}
+@media(min-width:600px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.card{margin:0}}
+@media(min-width:1024px){.app{max-width:none}.top{display:block;padding:17px 30px}.search-panel{padding:17px 30px 0}.search-panel .filters{max-width:850px}.cards{grid-template-columns:repeat(auto-fill,minmax(350px,1fr));padding:0 30px 24px}.card{height:100%}}
 </style><script>try{if(!sessionStorage.getItem('orderStatusSite'))document.documentElement.classList.add('nosite');}catch(e){document.documentElement.classList.add('nosite');}</script></head>
 <body>
 <div id="lock" class="lock" role="dialog" aria-modal="true" aria-label="Entrar na app">
@@ -406,6 +511,8 @@ html.nosite body{overflow:hidden}
       <input id="excelInput" type="file" accept=".xlsx,.xls" hidden>
     </div>
   </div>
+  </header>
+  <section class="search-panel" aria-label="Pesquisa e filtros">
   <div class="search">
     <input id="search" type="search" placeholder="Pesquisar cliente, estabelecimento, cidade...">
   </div>
@@ -413,7 +520,8 @@ html.nosite body{overflow:hidden}
     <select id="seller"><option value="">Todos os vendedores</option></select>
     <select id="driver"><option value="">Todos os motoristas</option></select>
   </div>
-  </header>
+  <div class="list-toolbar"><div class="list-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10"/></svg><span id="listHeadingText">Entregas</span></div><div class="voltas" id="voltas"></div></div>
+  </section>
 <main id="cards" class="cards"></main>
 <div id="empty" class="empty" hidden>Não foram encontrados resultados.</div>
 <div class="footer">Contacto: toque no número para ligar diretamente ao motorista.</div>
@@ -490,7 +598,7 @@ html.nosite body{overflow:hidden}
   <div class="install-copy"><strong>Instalar Order Status</strong><span>Acesso rápido como uma aplicação no telemóvel.</span></div>
   <div class="install-actions"><button id="installNow" class="install-btn primary">Instalar</button><button id="installClose" class="install-btn close" aria-label="Fechar">×</button></div>
 </div>
-<nav class="bottom-bar" id="bottomBar" aria-label="Filtros de entregas"><div class="in"><div class="mode-tabs"><button type="button" id="tabDeliveries" class="mode-tab selected">Entregas <span id="deliveryTotal"></span></button><button type="button" id="tabRetained" class="mode-tab">Retidas <span id="retainedTotal"></span></button><button type="button" id="tabLev" class="mode-tab" hidden>Levantamentos <span id="levTotal"></span></button></div><div class="voltas" id="voltas"></div></div></nav>
+<nav class="bottom-bar" id="bottomBar" aria-label="Filtros de entregas"><div class="in"><div class="mode-tabs"><button type="button" id="tabDeliveries" class="mode-tab selected">Entregas <span id="deliveryTotal"></span></button><button type="button" id="tabRetained" class="mode-tab">Retidas <span id="retainedTotal"></span></button><button type="button" id="tabLev" class="mode-tab" hidden>Levantamentos <span id="levTotal"></span></button></div></div></nav>
 <button id="toTop" class="to-top" type="button" aria-label="Voltar ao topo" title="Voltar ao topo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
 <button id="installFab" class="install-fab">📲 Instalar App</button>
 <script>
@@ -816,6 +924,7 @@ function render(){
    $('levTotal').textContent='('+(temLev?new Set(ACTIVE_DATA.filter(isLev).map(x=>String(x.cliente||x.nome||'').trim())).size:'?')+')';}
   $('deliveryTotal').textContent='('+new Set(ACTIVE_DATA.filter(x=>isEntrega(x)).map(x=>String(x.cliente||x.nome||'').trim())).size+')';
   $('retainedTotal').textContent='('+new Set(ACTIVE_DATA.filter(isRetained).map(x=>x.cliente)).size+')';
+  {const h=document.getElementById('listHeadingText');if(h)h.textContent=activeMode==='retidas'?'Retidas':activeMode==='levantamentos'?'Levantamentos':'Entregas';}
   if(activeMode==='retidas'){renderRetained();return;}
   const q=$('search').value.trim().toLowerCase(), s=$('seller').value, d=$('driver').value;
   const voltaInfo=computeVolta();
@@ -862,7 +971,7 @@ function render(){
     const fmtTel=p.replace(/^(\+?\d{0,3}?)(\d{3})(\d{3})(\d{3})$/,(m,pre,a,b,c)=>(pre?pre+' ':'')+a+' '+b+' '+c);
     return `<article class="card${todasLev?' card-lev':''}">
       <div class="c-head">
-        <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
+        <div class="c-title">${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}<div class="name">${esc(x.nome||'Sem estabelecimento')}</div><div class="client-inline">CLIENTE <strong>${esc(x.cliente||'—')}</strong></div></div>
         <div class="c-side"><div class="client-row"><button type="button" class="sf-open" data-cli="${esc(String(x.cliente||'').trim())}" aria-label="Copiar nº de cliente e abrir Salesforce" title="Copiar nº de cliente e abrir Salesforce">${ICO_SF}</button><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div>${todasLev?'<span class="lev-tag">Levantamento</span>':nLev?`<span class="lev-tag">${nLev} levantamento${nLev===1?'':'s'}</span>`:''}${g.length>1?`<span class="multi">${g.length} encomendas</span>`:'<span class="multi multi-ph" aria-hidden="true">1 encomenda</span>'}</div>
       </div>
       <div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor</span><span class="seller-name">${esc(x.vendedor||'—')}</span></span>${por?`<span class="seller-by">Colocada por ${esc(por)}</span>`:''}</span></div>
@@ -871,7 +980,7 @@ function render(){
           <div class="d-col"><div class="label">${ICO_TRUCK}<span>Motorista</span></div><div class="d-name">${esc(x.motorista||'—')}</div></div>
           <div class="d-col"><div class="label">${ICO_ROUTE}<span>${todasLev?'Tipo':'Entrega'}</span></div><div class="d-name">${todasLev?'Levantamento':info?`${info.numero}.ª volta`:'—'}</div></div>
         </div>
-        ${p?`<a class="call" href="tel:${esc(p)}" aria-label="Ligar ${esc(fmtTel)}">${ICO_TEL}<span>${esc(fmtTel)}</span></a>`:`<div class="call off">${ICO_TEL}<span>Sem contacto</span></div>`}
+        ${p?`<a class="call" href="tel:${esc(p)}" aria-label="Ligar ${esc(fmtTel)}"><span class="call-circle">${ICO_TEL}</span><span class="call-copy"><small>Contacto</small><strong>${esc(fmtTel)}</strong></span></a>`:`<div class="call off"><span class="call-circle">${ICO_TEL}</span><span class="call-copy"><small>Contacto</small><strong>Sem contacto</strong></span></div>`}
       </div>
       <div class="refs-all">${g.map(o=>refsHtml(o,g.length>1&&nLev>0)).join('')}</div>
     </article>`;
@@ -1564,4 +1673,4 @@ window.addEventListener('load',()=>{
 });
 </script>
 </body>
-  </html>
+</html>
