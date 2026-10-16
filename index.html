@@ -333,10 +333,9 @@ html.nosite body{overflow:hidden}
 .bottom-bar .voltas:empty{display:none}
 .bottom-bar .chip{height:34px}
 .site-chip{margin-left:0;flex:0 0 auto;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:12px;font-weight:800;cursor:pointer;vertical-align:middle}
-.acts{display:flex;gap:8px;align-items:stretch;margin-top:10px}
-.acts .call{flex:1 1 0;min-width:0;margin-top:0}
-.sf-open{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:50px;padding:0 16px;border:0;border-radius:999px;background:#00a1e0;color:#fff;font:inherit;font-size:15px;font-weight:800;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.sf-open svg{width:22px;height:22px}
+.client-row{display:flex;align-items:center;gap:8px}
+.sf-open{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:#00a1e0;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sf-open svg{width:20px;height:20px}
 .sf-open:active{background:#0b86bb}
 /* ===== Versão PC (>=1024px): a app ocupa o ecrã todo ===== */
 @media(min-width:1024px){
@@ -864,7 +863,7 @@ function render(){
     return `<article class="card${todasLev?' card-lev':''}">
       <div class="c-head">
         <div class="c-title"><div class="name">${esc(x.nome||'Sem estabelecimento')}</div>${x.cidade?`<div class="city">${ICO_PIN}${esc(x.cidade)}</div>`:''}</div>
-        <div class="c-side"><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div>${todasLev?'<span class="lev-tag">Levantamento</span>':nLev?`<span class="lev-tag">${nLev} levantamento${nLev===1?'':'s'}</span>`:''}${g.length>1?`<span class="multi">${g.length} encomendas</span>`:'<span class="multi multi-ph" aria-hidden="true">1 encomenda</span>'}</div>
+        <div class="c-side"><div class="client-row"><button type="button" class="sf-open" data-cli="${esc(String(x.cliente||'').trim())}" aria-label="Copiar nº de cliente e abrir Salesforce" title="Copiar nº de cliente e abrir Salesforce">${ICO_SF}</button><div class="client"><span>Cliente</span><b>${esc(x.cliente||'—')}</b></div></div>${todasLev?'<span class="lev-tag">Levantamento</span>':nLev?`<span class="lev-tag">${nLev} levantamento${nLev===1?'':'s'}</span>`:''}${g.length>1?`<span class="multi">${g.length} encomendas</span>`:'<span class="multi multi-ph" aria-hidden="true">1 encomenda</span>'}</div>
       </div>
       <div class="seller">${avatarVendedor(x.vendedor)}<span class="seller-txt"><span class="seller-main"><span class="s-label">Vendedor</span><span class="seller-name">${esc(x.vendedor||'—')}</span></span>${por?`<span class="seller-by">Colocada por ${esc(por)}</span>`:''}</span></div>
       <div class="ops">
@@ -872,7 +871,7 @@ function render(){
           <div class="d-col"><div class="label">${ICO_TRUCK}<span>Motorista</span></div><div class="d-name">${esc(x.motorista||'—')}</div></div>
           <div class="d-col"><div class="label">${ICO_ROUTE}<span>${todasLev?'Tipo':'Entrega'}</span></div><div class="d-name">${todasLev?'Levantamento':info?`${info.numero}.ª volta`:'—'}</div></div>
         </div>
-        <div class="acts">${p?`<a class="call" href="tel:${esc(p)}" aria-label="Ligar ${esc(fmtTel)}">${ICO_TEL}<span>${esc(fmtTel)}</span></a>`:`<div class="call off">${ICO_TEL}<span>Sem contacto</span></div>`}<button type="button" class="sf-open" data-cli="${esc(String(x.cliente||'').trim())}" aria-label="Copiar nº de cliente e abrir Salesforce">${ICO_SF}<span>Salesforce</span></button></div>
+        ${p?`<a class="call" href="tel:${esc(p)}" aria-label="Ligar ${esc(fmtTel)}">${ICO_TEL}<span>${esc(fmtTel)}</span></a>`:`<div class="call off">${ICO_TEL}<span>Sem contacto</span></div>`}
       </div>
       <div class="refs-all">${g.map(o=>refsHtml(o,g.length>1&&nLev>0)).join('')}</div>
     </article>`;
@@ -1565,4 +1564,4 @@ window.addEventListener('load',()=>{
 });
 </script>
 </body>
-</html>                                                                                                                 bLev').dataset.has!=='1'){alert('Os dados carregados foram importados antes 
+  </html>
