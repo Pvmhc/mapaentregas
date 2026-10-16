@@ -333,6 +333,11 @@ html.nosite body{overflow:hidden}
 .bottom-bar .voltas:empty{display:none}
 .bottom-bar .chip{height:34px}
 .site-chip{margin-left:0;flex:0 0 auto;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:12px;font-weight:800;cursor:pointer;vertical-align:middle}
+.acts{display:flex;gap:8px;align-items:stretch;margin-top:10px}
+.acts .call{flex:1 1 0;min-width:0;margin-top:0}
+.sf-open{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:50px;padding:0 16px;border:0;border-radius:999px;background:#00a1e0;color:#fff;font:inherit;font-size:15px;font-weight:800;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sf-open svg{width:22px;height:22px}
+.sf-open:active{background:#0b86bb}
 /* ===== Versão PC (>=1024px): a app ocupa o ecrã todo ===== */
 @media(min-width:1024px){
   .app{max-width:none;width:100%}
@@ -835,6 +840,7 @@ function render(){
   const ICO_PIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
   const ICO_ROUTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="6" r="2.6"/><path d="M8 16l8-8"/></svg>';
   const ICO_TRUCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
+  const ICO_SF='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.6 19a4.6 4.6 0 0 1-1-9.1A5.8 5.8 0 0 1 17 8.6a4.2 4.2 0 0 1 .9 8.3 4.3 4.3 0 0 1-5.6 1.4A4.6 4.6 0 0 1 7.6 19z"/></svg>';
   const ICO_TEL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
   // Encomendas do mesmo cliente, mesmo vendedor, mesmo motorista e mesma volta ficam num só cartão.
   const grupos=[],mapaG=new Map();
@@ -846,7 +852,7 @@ function render(){
   const refsHtml=(o,multi)=>`<div class="refs">${multi&&o.lev?'<span class="lev-tag lev-inline">Levantamento</span>':''}
         <div><span class="label">Transporte</span><b>${esc(String(o.transporte||'').replace(/^\d+\|/,'').replace(/\.0+$/,'')||'—')}</b></div>
         <div><span class="label">Ordem</span><b>${esc(o.ordem||'—')}</b></div>
-        <div><span class="label">Encomenda</span>${o.id?`<button type="button" class="enc" data-enc="${esc(o.id)}" title="Copiar e abrir Salesforce">${esc(o.id)}</button>`:'<b>—</b>'}</div>
+        <div><span class="label">Encomenda</span><b>${esc(o.id||'—')}</b></div>
       </div>`;
   $('cards').innerHTML=grupos.map(g=>{
     const x=g[0];
@@ -866,7 +872,7 @@ function render(){
           <div class="d-col"><div class="label">${ICO_TRUCK}<span>Motorista</span></div><div class="d-name">${esc(x.motorista||'—')}</div></div>
           <div class="d-col"><div class="label">${ICO_ROUTE}<span>${todasLev?'Tipo':'Entrega'}</span></div><div class="d-name">${todasLev?'Levantamento':info?`${info.numero}.ª volta`:'—'}</div></div>
         </div>
-        ${p?`<a class="call" href="tel:${esc(p)}" aria-label="Ligar ${esc(fmtTel)}">${ICO_TEL}<span>${esc(fmtTel)}</span></a>`:`<div class="call off">${ICO_TEL}<span>Sem contacto</span></div>`}
+        <div class="acts">${p?`<a class="call" href="tel:${esc(p)}" aria-label="Ligar ${esc(fmtTel)}">${ICO_TEL}<span>${esc(fmtTel)}</span></a>`:`<div class="call off">${ICO_TEL}<span>Sem contacto</span></div>`}<button type="button" class="sf-open" data-cli="${esc(String(x.cliente||'').trim())}" aria-label="Copiar nº de cliente e abrir Salesforce">${ICO_SF}<span>Salesforce</span></button></div>
       </div>
       <div class="refs-all">${g.map(o=>refsHtml(o,g.length>1&&nLev>0)).join('')}</div>
     </article>`;
@@ -1326,13 +1332,12 @@ function openSalesforce(){
     location.href='salesforce1://';
   }
 }
-$('cards').addEventListener('click',e=>{
-  const b=e.target.closest('.enc');if(!b)return;
-  const v=b.dataset.enc;if(!v)return;
+function copiarClienteEAbrir(v){
+  if(!v){showToast('Sem número de cliente');return;}
   // 1) copia já, no próprio toque
   const okSync=copyTextSync(v);
   if(!okSync) copyText(v).then(ok=>{if(!ok)showToast('Não foi possível copiar o número');});
-  showToast(`Encomenda ${v} copiada — a abrir Salesforce…`);
+  showToast(`Cliente ${v} copiado — a abrir Salesforce…`);
   // 2) abre a app logo a seguir
   let left=false;
   const onHide=()=>{if(document.hidden)left=true;};
@@ -1341,8 +1346,12 @@ $('cards').addEventListener('click',e=>{
   // 3) se a app não abriu, avisa (o número já está copiado)
   setTimeout(()=>{
     document.removeEventListener('visibilitychange',onHide);
-    if(!left)showToast(`Número ${v} copiado. Se o Salesforce não abriu, abra-o e cole.`);
+    if(!left)showToast(`Cliente ${v} copiado. Se o Salesforce não abriu, abra-o e cole.`);
   },2200);
+}
+$('cards').addEventListener('click',e=>{
+  const b=e.target.closest('.sf-open');if(!b)return;
+  copiarClienteEAbrir(b.dataset.cli||'');
 });
 $('importBtn').addEventListener('click',()=>{pinVal='';pinDraw();pinBack.classList.add('show');});$('pinPad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)pinKey(b.dataset.k);});
 pinBack.addEventListener('click',e=>{if(e.target===pinBack)pinClose();});
@@ -1472,8 +1481,8 @@ iniciarDados();
     root.style.setProperty('--hdr',h+'px');root.style.setProperty('--bar',b+'px');
     const cs=cartoes();
     const maxH=cs.reduce((m,c)=>Math.max(m,c.offsetHeight),0);
-    // só liga o scroll por cartão se o cartão mais alto couber na área visível (abaixo do cabeçalho)
-    root.classList.toggle('snap-on',window.innerWidth<1024&&cs.length>0&&(window.innerHeight-h-b)>=maxH+16);
+    // só liga o scroll por cartão em telemóvel (lado menor <600px; tablets ficam com scroll livre) e se o cartão mais alto couber na área visível
+    root.classList.toggle('snap-on',Math.min(window.innerWidth,window.innerHeight)<600&&cs.length>0&&(window.innerHeight-h-b)>=maxH+16);
     foco();
   }
   function onScroll(){
@@ -1556,4 +1565,4 @@ window.addEventListener('load',()=>{
 });
 </script>
 </body>
-</html>
+</html>                                                                                                                 bLev').dataset.has!=='1'){alert('Os dados carregados foram importados antes 
