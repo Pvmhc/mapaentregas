@@ -301,6 +301,9 @@ html[data-theme=dark] .card{border:0;box-shadow:0 6px 20px rgba(0,0,0,.5)}
 .bottom-bar .mode-tab{border:0;border-radius:999px;padding:10px 10px}
 .bottom-bar .mode-tab.selected{background:var(--rd-green);color:#fff}
 .bottom-bar .chip{border-radius:999px;height:36px}
+.bottom-bar .chip-lev{flex:1.5;white-space:nowrap;border-color:#3b82f6;color:#1e40af}
+.bottom-bar .chip-lev.on{background:#2563eb!important;border-color:#2563eb!important;color:#fff!important}
+html[data-theme=dark] .bottom-bar .chip-lev:not(.on){color:#93c5fd}
 .bottom-bar .chip.on{background:var(--rd-green);border-color:var(--rd-green);color:#fff}
 .install-prompt{border-radius:26px}
 .install-btn{border-radius:999px}
@@ -634,6 +637,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 const phone=s=>String(s??'').replace(/[^\d+]/g,'');
 const unique=a=>[...new Set(a.filter(Boolean).map(String))].sort((x,y)=>x.localeCompare(y,'pt-PT'));
 let voltaSel=0; // 0 = todas as voltas
+let levSel=false; // filtro: só levantamentos
 // Define a volta de cada transporte por motorista: o número mais pequeno é a 1.ª volta.
 function computeVolta(){
   const byDriver=new Map();
@@ -661,7 +665,9 @@ function buildVoltaChips(vi){
   let max=2; vi.forEach(v=>{if(v.numero>max)max=v.numero});
   const opts=[[0,'Todas']]; for(let i=1;i<=max;i++) opts.push([i,i+'ª volta']);
   if(voltaSel>max) voltaSel=0;
-  $('voltas').innerHTML=opts.map(([n,l])=>`<button type="button" class="chip${n===voltaSel?' on':''}" data-v="${n}">${l}</button>`).join('');
+  const nLev=new Set(ACTIVE_DATA.filter(x=>isEntrega(x)&&x.lev).map(x=>x.id||x.cliente)).size;
+  if(!nLev)levSel=false;
+  $('voltas').innerHTML=opts.map(([n,l])=>`<button type="button" class="chip${n===voltaSel&&!levSel?' on':''}" data-v="${n}">${l}</button>`).join('')+(nLev?`<button type="button" class="chip chip-lev${levSel?' on':''}" data-lev="1">Levantamentos (${nLev})</button>`:'');
 }
 function fillFilters(){
   const sel=$('seller').value,drv=$('driver').value;
@@ -669,14 +675,14 @@ function fillFilters(){
   $('voltas').hidden=activeMode==='retidas';
   if(activeMode==='entregas')buildVoltaChips(vi);
   const data=ACTIVE_DATA.filter(x=>activeMode==='retidas'?isRetained(x):isEntrega(x));
-  const okV=x=>activeMode==='retidas'||!voltaSel||voltaOf(x,vi)===voltaSel;
+  const okV=x=>activeMode==='retidas'||(levSel?!!x.lev:(!voltaSel||voltaOf(x,vi)===voltaSel));
   const sellers=unique(data.filter(x=>okV(x)&&(activeMode==='retidas'||!drv||x.motorista===drv)).map(x=>x.vendedor));
   const drivers=unique(data.filter(x=>okV(x)&&(!sel||x.vendedor===sel)).map(x=>x.motorista));
   const fill=(el,label,list,cur)=>{el.innerHTML='';const first=document.createElement('option');first.value='';first.textContent=label;el.appendChild(first);list.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)});el.value=list.includes(cur)?cur:'';};
   fill($('seller'),'Todos os vendedores',sellers,sel);
   if(activeMode==='retidas'){$('driver').hidden=true;$('driver').value='';}else{$('driver').hidden=false;fill($('driver'),'Todos os motoristas',drivers,drv);}
 }
-function setMode(mode){activeMode=mode;$('tabDeliveries').classList.toggle('selected',mode==='entregas');$('tabRetained').classList.toggle('selected',mode==='retidas');$('seller').value='';$('driver').value='';voltaSel=0;fillFilters();render();}
+function setMode(mode){activeMode=mode;$('tabDeliveries').classList.toggle('selected',mode==='entregas');$('tabRetained').classList.toggle('selected',mode==='retidas');$('seller').value='';$('driver').value='';voltaSel=0;levSel=false;fillFilters();render();}
 function renderRetained(){
   const q=$('search').value.trim().toLowerCase(),seller=$('seller').value;
   const rows=ACTIVE_DATA.filter(x=>isRetained(x)&&(!seller||x.vendedor===seller)&&(!q||[x.cliente,x.nome,x.cidade,x.vendedor,x._vo,x.id,x.referencia,x.motivo,x.bloqueio].join(' ').toLowerCase().includes(q)));
@@ -809,7 +815,7 @@ function render(){
   const out=ACTIVE_DATA.filter(x=>{
     if(!isEntrega(x))return false;
     const hay=[x.cliente,x.nome,x.cidade,x.vendedor,x._vo,x.motorista,x.contacto,x.ordem,x.transporte,x.id,x.lev?'levantamento':''].join(' ').toLowerCase();
-    return (!q||hay.includes(q))&&(!s||x.vendedor===s)&&(!d||x.motorista===d)&&(!voltaSel||voltaOf(x,voltaInfo)===voltaSel);
+    return (!q||hay.includes(q))&&(!s||x.vendedor===s)&&(!d||x.motorista===d)&&(levSel?!!x.lev:(!voltaSel||voltaOf(x,voltaInfo)===voltaSel));
   });
   const uniqueClients=new Set(out.map(x=>String(x.cliente||x.nome||'').trim()).filter(Boolean));
   $('count').textContent=uniqueClients.size;
@@ -988,7 +994,7 @@ function importAlgoz(wb){
         }
       }catch(e){}
       document.querySelector('.date').textContent='Dados partilhados — '+loadedDate;
-      $('seller').value='';$('driver').value='';voltaSel=0;setMode('entregas');
+      $('seller').value='';$('driver').value='';voltaSel=0;levSel=false;setMode('entregas');
       const av=[];
       if(retInfo)av.push(retInfo);
       if(semDriver.size)av.push('⚠ Motoristas sem correspondência na "Visão do dia" (sem contacto/volta): '+[...semDriver].join(', '));
@@ -1121,7 +1127,7 @@ function importExcel(file){
           }
         }catch(e){}
         document.querySelector('.date').textContent='Dados partilhados — '+loadedDate;
-        $('seller').value='';$('driver').value='';voltaSel=0;
+        $('seller').value='';$('driver').value='';voltaSel=0;levSel=false;
         setMode('entregas');
         const aviso=!transpKey?`\n\n⚠ Não encontrei nenhuma coluna de transporte. Colunas da folha:\n${headers.join(' | ')}`:(comTransp===0?`\n\n⚠ A coluna "${transpKey}" está vazia para esta data, por isso não há voltas.`:`\nCom nº de transporte: ${comTransp}`);
         alert(`Excel de ${SITE_NOMES[SITE]} guardado e partilhado com a equipa.\n\nData: ${loadedDate}\nRegistos: ${imported.length}\nClientes únicos: ${new Set(imported.map(x=>x.cliente)).size}\nEncomendas retidas: ${retained.length} (${new Set(retained.map(x=>x.cliente)).size} clientes)${!retSheetName?"\n⚠ Aba RETIDOS não encontrada.":""}\nNão entregues sem nova encomenda: ${new Set(falhas.map(x=>x.cliente)).size} clientes${falhasInfo}${aviso}${aviso2}`);
@@ -1345,7 +1351,7 @@ document.addEventListener('keydown',e=>{
 });
 $('tabDeliveries').addEventListener('click',()=>setMode('entregas'));
 $('tabRetained').addEventListener('click',()=>setMode('retidas'));$('excelInput').addEventListener('change',e=>{if(e.target.files[0])importExcel(e.target.files[0])});
-$('search').addEventListener('input',render);$('voltas').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;voltaSel=+b.dataset.v;fillFilters();render();});
+$('search').addEventListener('input',render);$('voltas').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;if(b.dataset.lev){levSel=!levSel;voltaSel=0;}else{levSel=false;voltaSel=+b.dataset.v;}fillFilters();render();});
 ['seller','driver'].forEach(id=>$(id).addEventListener('change',()=>{fillFilters();render();}));
 function setTheme(t,save){
   document.documentElement.setAttribute('data-theme',t);
@@ -1429,7 +1435,7 @@ function selectSite(x){
   document.documentElement.classList.remove('nosite');
   aplicarSite();
   ACTIVE_DATA=[];loadedDate='';
-  $('seller').value='';$('driver').value='';$('search').value='';voltaSel=0;
+  $('seller').value='';$('driver').value='';$('search').value='';voltaSel=0;levSel=false;
   setMode('entregas');
   loadSharedData();
 }
