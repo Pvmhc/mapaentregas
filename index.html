@@ -523,6 +523,11 @@ const normCli=c=>String(c==null?'':c).trim().replace(/\.0+$/,'').replace(/^0+(?=
 function aplicarProp(arr){
   (arr||[]).forEach(x=>{
     if(x._vo===undefined)x._vo=x.vendedor;
+    // Levantamento: guardado como marca "|L1"/"|L0" no fim do estado (o campo "lev" pode perder-se na partilha)
+    const mL=/\|L([01])$/.exec(String(x.status??''));
+    if(mL){x.lev=mL[1]==='1';x.status=String(x.status).replace(/\|L[01]$/,'');}
+    else if(x.lev==='true'||x.lev===true)x.lev=true;
+    else if(x.lev==='false'||x.lev===false)x.lev=false;
     // Tira o código entre parênteses do fim do nome do motorista, ex.: "Pedro Soares (0006002418)"
     if(x.motorista)x.motorista=String(x.motorista).replace(/\s*\(\s*\d+\s*\)\s*$/,'').trim();
     const p=PROP[normCli(x.cliente)];
@@ -666,8 +671,9 @@ function buildVoltaChips(vi){
   const opts=[[0,'Todas']]; for(let i=1;i<=max;i++) opts.push([i,i+'ª volta']);
   if(voltaSel>max) voltaSel=0;
   const nLev=new Set(ACTIVE_DATA.filter(x=>isEntrega(x)&&x.lev).map(x=>x.id||x.cliente)).size;
+  const temLev=ACTIVE_DATA.some(x=>x&&typeof x.lev==='boolean'); // dados importados com a deteção de levantamentos
   if(!nLev)levSel=false;
-  $('voltas').innerHTML=opts.map(([n,l])=>`<button type="button" class="chip${n===voltaSel&&!levSel?' on':''}" data-v="${n}">${l}</button>`).join('')+(nLev?`<button type="button" class="chip chip-lev${levSel?' on':''}" data-lev="1">Levantamentos (${nLev})</button>`:'');
+  $('voltas').innerHTML=opts.map(([n,l])=>`<button type="button" class="chip${n===voltaSel&&!levSel?' on':''}" data-v="${n}">${l}</button>`).join('')+(SITE==='faro'?`<button type="button" class="chip chip-lev${levSel?' on':''}" data-lev="1" data-has="${temLev?1:0}">Levantamentos (${temLev?nLev:'?'})</button>`:'');
 }
 function fillFilters(){
   const sel=$('seller').value,drv=$('driver').value;
@@ -1038,7 +1044,7 @@ function importExcel(file){
         vendedor:String(r['Nome do vendedor']??'').trim(),
         motorista:String(r['Motorista']??'').trim(),
         contacto:String(r['Contactos']??'').trim(),
-        status:String(r['Stat. aprovação']??'').trim(),
+        status:String(r['Stat. aprovação']??'').trim()+(isLevantamento(r[pesoKey])?'|L1':'|L0'),
         ordem:String(r['Documento Outbound']??'').trim(),
         transporte:transpKey?String(r[transpKey]??'').trim().replace(/\.0+$/,''):'',
         id:String(r['Documento de vendas']??'').trim(),
@@ -1351,7 +1357,7 @@ document.addEventListener('keydown',e=>{
 });
 $('tabDeliveries').addEventListener('click',()=>setMode('entregas'));
 $('tabRetained').addEventListener('click',()=>setMode('retidas'));$('excelInput').addEventListener('change',e=>{if(e.target.files[0])importExcel(e.target.files[0])});
-$('search').addEventListener('input',render);$('voltas').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;if(b.dataset.lev){levSel=!levSel;voltaSel=0;}else{levSel=false;voltaSel=+b.dataset.v;}fillFilters();render();});
+$('search').addEventListener('input',render);$('voltas').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;if(b.dataset.lev){if(b.dataset.has!=='1'){alert('Os dados carregados foram importados antes da deteção de levantamentos.\n\nImporta novamente o Excel (Peso total = 0 na coluna X) para os levantamentos aparecerem.');return;}levSel=!levSel;voltaSel=0;}else{levSel=false;voltaSel=+b.dataset.v;}fillFilters();render();});
 ['seller','driver'].forEach(id=>$(id).addEventListener('change',()=>{fillFilters();render();}));
 function setTheme(t,save){
   document.documentElement.setAttribute('data-theme',t);
